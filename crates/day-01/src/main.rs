@@ -1,6 +1,6 @@
+use lib::get_args;
 use std::{
     collections::HashMap,
-    env::args,
     error::Error,
     io::{self, stdin, BufRead},
     process::exit,
@@ -77,24 +77,6 @@ fn solve2(itr: impl Iterator<Item = io::Result<String>>) -> Result<u32, Box<dyn 
 fn usage(prog_name: String) {
     println!("Usage: {} [-1|-2|-h]", prog_name);
     exit(0)
-}
-
-fn get_args() -> Result<(String, Vec<String>), Box<dyn Error>> {
-    let prog_name_and_args = args().collect::<Vec<_>>();
-
-    let prog_name = prog_name_and_args
-        .get(0)
-        .ok_or(Into::<Box<dyn Error>>::into("Cant get the program name"))?
-        .to_string();
-
-    let args = prog_name_and_args
-        .get(1..)
-        .ok_or(Into::<Box<dyn Error>>::into(
-            "Cant get the program arguments",
-        ))?
-        .to_vec();
-
-    Ok((prog_name, args))
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
