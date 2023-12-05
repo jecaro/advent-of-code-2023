@@ -1,4 +1,4 @@
-use lib::get_args;
+use lib::{get_args, INVALID_INPUT};
 use std::{
     error::Error,
     io::{self, BufRead},
@@ -6,7 +6,6 @@ use std::{
     str::FromStr,
 };
 
-const INVALID_INPUT: &str = "Invalid input";
 const BAG: Cubes = Cubes {
     red: 12,
     green: 13,
@@ -294,7 +293,7 @@ mod tests {
             games(),
             games_str
                 .lines()
-                .map(|s| Game::from_str(s))
+                .map(Game::from_str)
                 .collect::<Result<Vec<_>, _>>()
                 .unwrap(),
         );

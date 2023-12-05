@@ -1,5 +1,7 @@
 use std::{env::args, error::Error};
 
+pub const INVALID_INPUT: &str = "Invalid input";
+
 pub fn get_args() -> Result<(String, Vec<String>), Box<dyn Error>> {
     let prog_name_and_args = args().collect::<Vec<_>>();
 
