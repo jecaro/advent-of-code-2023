@@ -210,7 +210,7 @@ fn solve2(
 }
 
 #[cfg(test)]
-mod tests {
+mod day03 {
     use std::{
         fs::File,
         io::{BufRead, BufReader},

@@ -113,7 +113,7 @@ fn solve2(
 }
 
 #[cfg(test)]
-mod tests {
+mod day04 {
     use std::{
         collections::HashSet,
         fs::File,

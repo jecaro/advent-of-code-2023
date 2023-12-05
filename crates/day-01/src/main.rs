@@ -99,7 +99,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 #[cfg(test)]
-mod tests {
+mod day01 {
     use std::fs::File;
     use std::io;
     use std::io::BufRead;
