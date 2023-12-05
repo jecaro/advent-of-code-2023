@@ -143,7 +143,7 @@ impl FromStr for Cubes {
 }
 
 #[cfg(test)]
-mod tests {
+mod day02 {
     use std::{
         fs::File,
         io::{BufRead, BufReader},
