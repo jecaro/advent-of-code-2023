@@ -37,7 +37,7 @@ fn first_last(s: &str) -> Result<u32, Box<dyn Error>> {
 
     let number = format!("{}{}", first, last);
 
-    Ok(number.parse::<u32>()?)
+    number.parse::<u32>().map_err(Into::into)
 }
 
 fn solve1(itr: impl Iterator<Item = io::Result<String>>) -> Result<u32, Box<dyn Error>> {
