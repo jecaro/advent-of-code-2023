@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Some(arg) if arg == "-1" || arg == "-2" => {
             let solve = if arg == "-1" { solve1 } else { solve2 };
             let input = io::stdin().lock().lines();
-            let maze = parse_maze(input)?;
+            let maze = process_results(input, |itr| parse_maze(itr))??;
             let result = solve(maze)?;
 
             println!("{}", result);
@@ -92,8 +92,8 @@ fn parse_char(c: char) -> Result<Tile, Box<dyn Error>> {
     }
 }
 
-fn parse_maze(itr: impl Iterator<Item = io::Result<String>>) -> Result<Maze, Box<dyn Error>> {
-    itr.map(|line| line?.chars().map(|c| parse_char(c)).collect())
+fn parse_maze(itr: impl Iterator<Item = String>) -> Result<Maze, Box<dyn Error>> {
+    itr.map(|line| line.chars().map(|c| parse_char(c)).collect())
         .collect()
 }
 
@@ -369,6 +369,8 @@ mod day10 {
         io::{BufRead, BufReader},
     };
 
+    use itertools::process_results;
+
     use crate::{parse_maze, solve1, solve2, Maze, Tile};
 
     const EXAMPLE1: &str = "\
@@ -503,11 +505,11 @@ mod day10 {
     #[test]
     fn test_parse_maze() {
         assert_eq!(
-            parse_maze(EXAMPLE1.lines().map(|s| Ok(s.to_string()))).unwrap(),
+            parse_maze(EXAMPLE1.lines().map(|s| s.to_string())).unwrap(),
             example1()
         );
         assert_eq!(
-            parse_maze(EXAMPLE2.lines().map(|s| Ok(s.to_string()))).unwrap(),
+            parse_maze(EXAMPLE2.lines().map(|s| s.to_string())).unwrap(),
             example2()
         );
     }
@@ -524,19 +526,19 @@ mod day10 {
 
     #[test]
     fn test_solve2_example3() {
-        let maze = parse_maze(EXAMPLE3.lines().map(|s| Ok(s.to_string()))).unwrap();
+        let maze = parse_maze(EXAMPLE3.lines().map(|s| s.to_string())).unwrap();
         assert_eq!(solve2(maze).unwrap(), 4);
     }
 
     #[test]
     fn test_solve2_example4() {
-        let maze = parse_maze(EXAMPLE4.lines().map(|s| Ok(s.to_string()))).unwrap();
+        let maze = parse_maze(EXAMPLE4.lines().map(|s| s.to_string())).unwrap();
         assert_eq!(solve2(maze).unwrap(), 8);
     }
 
     #[test]
     fn test_solve2_example5() {
-        let maze = parse_maze(EXAMPLE5.lines().map(|s| Ok(s.to_string()))).unwrap();
+        let maze = parse_maze(EXAMPLE5.lines().map(|s| s.to_string())).unwrap();
         assert_eq!(solve2(maze).unwrap(), 10);
     }
 
@@ -544,7 +546,9 @@ mod day10 {
     fn test_solve1_input() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
-        let maze = parse_maze(reader.lines()).unwrap();
+        let maze = process_results(reader.lines(), |itr| parse_maze(itr))
+            .unwrap()
+            .unwrap();
 
         assert_eq!(solve1(maze).unwrap(), 6890);
     }
@@ -553,7 +557,9 @@ mod day10 {
     fn test_solve2_input() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
-        let maze = parse_maze(reader.lines()).unwrap();
+        let maze = process_results(reader.lines(), |itr| parse_maze(itr))
+            .unwrap()
+            .unwrap();
 
         assert_eq!(solve2(maze).unwrap(), 453);
     }

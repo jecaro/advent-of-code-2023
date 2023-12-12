@@ -1,4 +1,4 @@
-use itertools::Itertools;
+use itertools::{process_results, Itertools};
 use lib::get_args;
 use std::{
     error::Error,
@@ -16,20 +16,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let solve = match arg.as_str() {
-                "-1" => solve1,
-                _ => solve2,
-            };
+            let result = process_results(io::stdin().lock().lines(), |itr| {
+                let input = itr.map(|line| {
+                    char_to_located_element(line.clone().chars()).collect::<Vec<LocatedElement>>()
+                });
 
-            let input = io::stdin()
-                .lock()
-                .lines()
-                .map(|line| Ok(char_to_located_element(line?.chars()).collect()));
+                let solve = match arg.as_str() {
+                    "-1" => solve1,
+                    _ => solve2,
+                };
 
-            let result = solve(input)?;
+                solve(input)
+            })?;
 
             println!("{}", result)
         }
+
         _ => usage(prog_name),
     }
     Ok(())
@@ -115,106 +117,99 @@ fn adjacent(location: i32, number: i32, symbol_location: i32) -> bool {
     symbol_location >= location - 1 && symbol_location <= location + nb_digits
 }
 
-fn solve1(
-    itr: impl Iterator<Item = Result<Vec<LocatedElement>, Box<dyn Error>>>,
-) -> Result<i32, Box<dyn Error>> {
-    itertools::process_results(itr, |itr| {
-        // add an empty line at the beginning
-        [Vec::new()]
-            .into_iter()
-            .chain(itr)
-            // and at the end
-            .chain([Vec::new()])
-            .tuple_windows()
-            // to have current in a middle of a three lines window
-            .map(|(previous, current, next)| {
-                // get all the symbols on the three lines
-                let symbols = previous
-                    .iter()
-                    .chain(current.iter())
-                    .chain(next.iter())
-                    .filter(|located_element| {
-                        matches!(located_element.element, Element::Symbol { .. })
-                    })
-                    .collect::<Vec<_>>();
+fn solve1(itr: impl Iterator<Item = Vec<LocatedElement>>) -> i32 {
+    // add an empty line at the beginning
+    [Vec::new()]
+        .into_iter()
+        .chain(itr)
+        // and at the end
+        .chain([Vec::new()])
+        .tuple_windows()
+        // to have current in a middle of a three lines window
+        .map(|(previous, current, next)| {
+            // get all the symbols on the three lines
+            let symbols = previous
+                .iter()
+                .chain(current.iter())
+                .chain(next.iter())
+                .filter(|located_element| matches!(located_element.element, Element::Symbol { .. }))
+                .collect::<Vec<_>>();
 
-                // get all the numbers on current line
-                current
-                    .iter()
-                    .filter_map(|located_element| match &located_element.element {
-                        Element::Number { number } => {
-                            if symbols.iter().any(|symbol| {
-                                adjacent(located_element.location, *number, symbol.location)
-                            }) {
-                                Some(number)
-                            } else {
-                                None
-                            }
+            // get all the numbers on current line
+            current
+                .iter()
+                .filter_map(|located_element| match &located_element.element {
+                    Element::Number { number } => {
+                        if symbols.iter().any(|symbol| {
+                            adjacent(located_element.location, *number, symbol.location)
+                        }) {
+                            Some(number)
+                        } else {
+                            None
                         }
-                        _ => None,
-                    })
-                    .sum::<i32>()
-            })
-            .sum()
-    })
+                    }
+                    _ => None,
+                })
+                .sum::<i32>()
+        })
+        .sum()
 }
 
-fn solve2(
-    itr: impl Iterator<Item = Result<Vec<LocatedElement>, Box<dyn Error>>>,
-) -> Result<i32, Box<dyn Error>> {
-    itertools::process_results(itr, |itr| {
-        // add an empty line at the beginning
-        [Vec::new()]
-            .into_iter()
-            .chain(itr)
-            // and at the end
-            .chain([Vec::new()])
-            .tuple_windows()
-            // to have current in a middle of a three lines window
-            .map(|(previous, current, next)| {
-                // get all the numbers on the three lines
-                let numbers = previous
-                    .iter()
-                    .chain(current.iter())
-                    .chain(next.iter())
-                    .filter_map(|located_element| match located_element.element {
-                        Element::Number { number } => Some((located_element.location, number)),
-                        _ => None,
-                    })
-                    .collect::<Vec<_>>();
+fn solve2(itr: impl Iterator<Item = Vec<LocatedElement>>) -> i32 {
+    // add an empty line at the beginning
+    [Vec::new()]
+        .into_iter()
+        .chain(itr)
+        // and at the end
+        .chain([Vec::new()])
+        .tuple_windows()
+        // to have current in a middle of a three lines window
+        .map(|(previous, current, next)| {
+            // get all the numbers on the three lines
+            let numbers = previous
+                .iter()
+                .chain(current.iter())
+                .chain(next.iter())
+                .filter_map(|located_element| match located_element.element {
+                    Element::Number { number } => Some((located_element.location, number)),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
 
-                // get all the stars on current line
-                current
-                    .iter()
-                    .filter_map(|located_element| match &located_element.element {
-                        Element::Symbol { symbol: '*' } => {
-                            // get the adjacent numbers
-                            let adjacent_numbers = numbers
-                                .iter()
-                                .filter(|(location, number)| {
-                                    adjacent(*location, *number, located_element.location)
-                                })
-                                .collect::<Vec<_>>();
+            // get all the stars on current line
+            current
+                .iter()
+                .filter_map(|located_element| match &located_element.element {
+                    Element::Symbol { symbol: '*' } => {
+                        // get the adjacent numbers
+                        let adjacent_numbers = numbers
+                            .iter()
+                            .filter(|(location, number)| {
+                                adjacent(*location, *number, located_element.location)
+                            })
+                            .collect::<Vec<_>>();
 
-                            match adjacent_numbers.as_slice() {
-                                [(_, number1), (_, number2)] => Some(number1 * number2),
-                                _ => None,
-                            }
+                        match adjacent_numbers.as_slice() {
+                            [(_, number1), (_, number2)] => Some(number1 * number2),
+                            _ => None,
                         }
-                        _ => None,
-                    })
-                    .sum::<i32>()
-            })
-            .sum()
-    })
+                    }
+                    _ => None,
+                })
+                .sum::<i32>()
+        })
+        .sum()
 }
 
 #[cfg(test)]
 mod day03 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
+
+    use itertools::process_results;
 
     use crate::{char_to_located_element, solve1, solve2, Element, LocatedElement};
 
@@ -390,11 +385,10 @@ mod day03 {
         let result = solve1(
             engine()
                 .lines()
-                .map(|line| char_to_located_element(line.chars()).collect())
-                .map(Ok),
+                .map(|line| char_to_located_element(line.chars()).collect()),
         );
 
-        assert_eq!(result.unwrap(), 4361);
+        assert_eq!(result, 4361);
     }
 
     #[test]
@@ -402,11 +396,10 @@ mod day03 {
         let result = solve2(
             engine()
                 .lines()
-                .map(|line| char_to_located_element(line.chars()).collect())
-                .map(Ok),
+                .map(|line| char_to_located_element(line.chars()).collect()),
         );
 
-        assert_eq!(result.unwrap(), 467835);
+        assert_eq!(result, 467835);
     }
 
     #[test]
@@ -415,9 +408,10 @@ mod day03 {
         let reader = BufReader::new(file);
         let input = reader
             .lines()
-            .map(|line| Ok(char_to_located_element(line?.chars()).collect()));
+            .map(|line| Ok::<_, Box<dyn Error>>(char_to_located_element(line?.chars()).collect()));
+        let result = process_results(input, |itr| solve1(itr)).unwrap();
 
-        assert_eq!(solve1(input).unwrap(), 533784);
+        assert_eq!(result, 533784);
     }
 
     #[test]
@@ -426,8 +420,9 @@ mod day03 {
         let reader = BufReader::new(file);
         let input = reader
             .lines()
-            .map(|line| Ok(char_to_located_element(line?.chars()).collect()));
+            .map(|line| Ok::<_, Box<dyn Error>>(char_to_located_element(line?.chars()).collect()));
+        let result = process_results(input, |itr| solve2(itr)).unwrap();
 
-        assert_eq!(solve2(input).unwrap(), 78826761);
+        assert_eq!(result, 78826761);
     }
 }

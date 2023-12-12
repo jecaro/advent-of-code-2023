@@ -1,4 +1,4 @@
-use itertools::Itertools;
+use itertools::{process_results, Itertools};
 use lib::{get_args, INVALID_INPUT};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::{
@@ -18,13 +18,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2_1" || arg == "-2_2" => {
-            let solve = match arg.as_str() {
+            let input = process_results(io::stdin().lock().lines(), |itr| parse_input(itr))??;
+            let solve: fn(_) -> Result<u32, Box<dyn Error>> = match arg.as_str() {
                 "-1" => solve1,
                 "-2_1" => solve2_brut_force,
                 _ => solve2_brut_force_reverse,
             };
-
-            let input = parse_input(io::stdin().lock().lines())?;
 
             let result = solve(input)?;
 
@@ -78,23 +77,21 @@ fn parse_seeds(s: &str) -> Result<Vec<Seed>, Box<dyn Error>> {
         .collect::<Result<Vec<_>, _>>()
 }
 
-fn parse_input(itr: impl Iterator<Item = io::Result<String>>) -> Result<Input, Box<dyn Error>> {
-    itertools::process_results(itr, |itr| -> Result<Input, Box<dyn Error>> {
-        let mut chunks = itr.batching(|itr| {
-            let non_empty_lines = itr.take_while(|line| line != "");
+fn parse_input(itr: impl Iterator<Item = String>) -> Result<Input, Box<dyn Error>> {
+    let mut chunks = itr.batching(|itr| {
+        let non_empty_lines = itr.take_while(|line| line != "");
 
-            non_empty_lines.reduce(|acc, line| acc + "\n" + &line)
-        });
+        non_empty_lines.reduce(|acc, line| acc + "\n" + &line)
+    });
 
-        let first_chunk = chunks.next().ok_or(INVALID_INPUT)?;
-        let seeds = parse_seeds(&first_chunk)?;
+    let first_chunk = chunks.next().ok_or(INVALID_INPUT)?;
+    let seeds = parse_seeds(&first_chunk)?;
 
-        let garden_maps = chunks
-            .map(|chunk| chunk.parse::<GardenMap>())
-            .collect::<Result<Vec<_>, _>>()?;
+    let garden_maps = chunks
+        .map(|chunk| chunk.parse::<GardenMap>())
+        .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(Input { seeds, garden_maps })
-    })?
+    Ok(Input { seeds, garden_maps })
 }
 
 impl FromStr for GardenMap {
@@ -236,6 +233,8 @@ mod day05 {
         io::{BufRead, BufReader},
         str::FromStr,
     };
+
+    use itertools::process_results;
 
     use crate::{
         parse_input, parse_seeds, solve1, solve2_brut_force, solve2_brut_force_reverse, GardenMap,
@@ -481,7 +480,7 @@ mod day05 {
     fn parse_input_() {
         assert_eq!(
             input1(),
-            parse_input(input_str().lines().map(|s| Ok(s.to_string()))).unwrap()
+            parse_input(input_str().lines().map(|s| s.to_string())).unwrap()
         );
     }
 
@@ -504,18 +503,22 @@ mod day05 {
     fn input_solve1() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
-        let input = parse_input(reader.lines());
+        let input = process_results(reader.lines(), |itr| parse_input(itr))
+            .unwrap()
+            .unwrap();
 
-        assert_eq!(solve1(input.unwrap()).unwrap(), 382895070);
+        assert_eq!(solve1(input).unwrap(), 382895070);
     }
 
     #[test]
     fn input_solve2_brut_force_reverse() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
-        let input = parse_input(reader.lines());
+        let input = process_results(reader.lines(), |itr| parse_input(itr))
+            .unwrap()
+            .unwrap();
 
-        assert_eq!(solve2_brut_force_reverse(input.unwrap()).unwrap(), 17729182);
+        assert_eq!(solve2_brut_force_reverse(input).unwrap(), 17729182);
     }
 
     // This takes too much time for tests
@@ -523,8 +526,10 @@ mod day05 {
     // fn input_solve2() {
     //     let file = File::open("input").unwrap();
     //     let reader = BufReader::new(file);
-    //     let input = parse_input(reader.lines());
+    //     let input = process_results(reader.lines(), |itr| parse_input(itr))
+    //         .unwrap()
+    //         .unwrap();
 
-    //     assert_eq!(solve2_brut_force(input.unwrap()).unwrap(), 17729182);
+    //     assert_eq!(solve2_brut_force(input).unwrap(), 17729182);
     // }
 }

@@ -1,5 +1,5 @@
 use itertools::FoldWhile::{Continue, Done};
-use itertools::Itertools;
+use itertools::{process_results, Itertools};
 use lib::{get_args, INVALID_INPUT};
 use num::integer::lcm;
 use std::io::BufRead;
@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             };
 
             let input = io::stdin().lock().lines();
-            let (path, nodes) = parse_input(input)?;
+            let (path, nodes) = process_results(input, |itr| parse_input(itr))??;
             let result = solve(path, nodes)?;
 
             println!("{}", result)
@@ -76,20 +76,17 @@ fn parse_line(s: &str) -> Result<Node, Box<dyn Error>> {
     ))
 }
 
-fn parse_input(
-    lines: impl Iterator<Item = io::Result<String>>,
-) -> Result<(Path, Vec<Node>), Box<dyn Error>> {
-    itertools::process_results(lines, |mut lines| -> Result<_, Box<dyn Error>> {
-        let path = parse_path(&lines.next().ok_or(INVALID_INPUT)?)?;
+fn parse_input(lines: impl Iterator<Item = String>) -> Result<(Path, Vec<Node>), Box<dyn Error>> {
+    let mut lines = lines;
+    let path = parse_path(&lines.next().ok_or(INVALID_INPUT)?)?;
 
-        lines.next();
+    lines.next();
 
-        let nodes = lines
-            .map(|line| parse_line(&line))
-            .collect::<Result<Vec<_>, _>>()?;
+    let nodes = lines
+        .map(|line| parse_line(&line))
+        .collect::<Result<Vec<_>, _>>()?;
 
-        Ok((path, nodes))
-    })?
+    Ok((path, nodes))
 }
 
 fn solve1(path: Path, start_node: String, nodes: Vec<Node>) -> Result<u64, Box<dyn Error>> {
@@ -139,6 +136,8 @@ mod day08 {
         fs::File,
         io::{BufRead, BufReader},
     };
+
+    use itertools::process_results;
 
     use crate::{parse_input, solve1, solve2, Direction, Directions, Node, Path};
 
@@ -324,24 +323,21 @@ mod day08 {
 
     #[test]
     fn test_parse_example1() {
-        let parsed_example =
-            parse_input(EXAMPLE1.lines().map(|line| Ok(line.to_string()))).unwrap();
+        let parsed_example = parse_input(EXAMPLE1.lines().map(|line| line.to_string())).unwrap();
 
         assert_eq!(parsed_example, example1());
     }
 
     #[test]
     fn test_parse_example2() {
-        let parsed_example =
-            parse_input(EXAMPLE2.lines().map(|line| Ok(line.to_string()))).unwrap();
+        let parsed_example = parse_input(EXAMPLE2.lines().map(|line| line.to_string())).unwrap();
 
         assert_eq!(parsed_example, example2());
     }
 
     #[test]
     fn test_parse_example3() {
-        let parsed_example =
-            parse_input(EXAMPLE3.lines().map(|line| Ok(line.to_string()))).unwrap();
+        let parsed_example = parse_input(EXAMPLE3.lines().map(|line| line.to_string())).unwrap();
 
         assert_eq!(parsed_example, example3());
     }
@@ -371,7 +367,9 @@ mod day08 {
     fn test_solve1_input() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
-        let (path, nodes) = parse_input(reader.lines()).unwrap();
+        let (path, nodes) = process_results(reader.lines(), |itr| parse_input(itr))
+            .unwrap()
+            .unwrap();
 
         assert_eq!(solve1(path, "AAA".to_string(), nodes).unwrap(), 16531);
     }
@@ -380,7 +378,9 @@ mod day08 {
     fn test_solve2_input() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
-        let (path, nodes) = parse_input(reader.lines()).unwrap();
+        let (path, nodes) = process_results(reader.lines(), |itr| parse_input(itr))
+            .unwrap()
+            .unwrap();
 
         assert_eq!(solve2(path, nodes).unwrap(), 24035773251517);
     }
