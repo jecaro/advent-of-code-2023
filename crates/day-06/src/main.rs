@@ -1,3 +1,4 @@
+use itertools::process_results;
 use lib::{get_args, INVALID_INPUT};
 use std::{
     error::Error,
@@ -35,15 +36,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" => {
-            let input = parse_races(io::stdin().lock().lines())?;
+            let input = process_results(io::stdin().lock().lines(), |itr| parse_races(itr))??;
 
             let result = solve(input.into_iter());
 
             println!("{}", result)
         }
         Some(arg) if arg == "-2" => {
-            let input = parse_race(io::stdin().lock().lines())?;
-            println!("{:?}", input);
+            let input = process_results(io::stdin().lock().lines(), |itr| parse_race(itr))??;
 
             let result = solve_race(input);
 
@@ -72,13 +72,13 @@ fn parse_line1(s: String, header: String) -> Result<Vec<u64>, Box<dyn Error>> {
         .map_err(|e| e.into())
 }
 
-fn parse_races(itr: impl Iterator<Item = io::Result<String>>) -> Result<Vec<Race>, Box<dyn Error>> {
+fn parse_races(itr: impl Iterator<Item = String>) -> Result<Vec<Race>, Box<dyn Error>> {
     let mut itr = itr;
 
-    let first_line = itr.next().ok_or::<Box<dyn Error>>(INVALID_INPUT.into())??;
+    let first_line = itr.next().ok_or::<Box<dyn Error>>(INVALID_INPUT.into())?;
     let times = parse_line1(first_line, "Time:".into())?;
 
-    let second_line = itr.next().ok_or::<Box<dyn Error>>("".into())??;
+    let second_line = itr.next().ok_or::<Box<dyn Error>>("".into())?;
     let distances = parse_line1(second_line, "Distance:".into())?;
 
     Ok(zip(times, distances)
@@ -99,13 +99,13 @@ fn parse_line2(s: String, header: String) -> Result<u64, Box<dyn Error>> {
         .map_err(|e| e.into())
 }
 
-fn parse_race(itr: impl Iterator<Item = io::Result<String>>) -> Result<Race, Box<dyn Error>> {
+fn parse_race(itr: impl Iterator<Item = String>) -> Result<Race, Box<dyn Error>> {
     let mut itr = itr;
 
-    let first_line = itr.next().ok_or::<Box<dyn Error>>(INVALID_INPUT.into())??;
+    let first_line = itr.next().ok_or::<Box<dyn Error>>(INVALID_INPUT.into())?;
     let time = parse_line2(first_line, "Time:".into())?;
 
-    let second_line = itr.next().ok_or::<Box<dyn Error>>("".into())??;
+    let second_line = itr.next().ok_or::<Box<dyn Error>>("".into())?;
     let distance = parse_line2(second_line, "Distance:".into())?;
 
     Ok(Race { time, distance })
@@ -133,6 +133,8 @@ mod day06 {
         fs::File,
         io::{BufRead, BufReader},
     };
+
+    use itertools::process_results;
 
     use crate::{parse_race, parse_races, solve, solve_race, Race};
 
@@ -174,7 +176,7 @@ mod day06 {
     #[test]
     fn parse_races_() {
         assert_eq!(
-            parse_races(EXAMPLE.lines().map(|s| Ok(s.to_string()))).unwrap(),
+            parse_races(EXAMPLE.lines().map(|s| s.to_string())).unwrap(),
             example1()
         );
     }
@@ -182,7 +184,7 @@ mod day06 {
     #[test]
     fn parse_race_() {
         assert_eq!(
-            parse_race(EXAMPLE.lines().map(|s| Ok(s.to_string()))).unwrap(),
+            parse_race(EXAMPLE.lines().map(|s| s.to_string())).unwrap(),
             example2()
         );
     }
@@ -203,7 +205,9 @@ mod day06 {
     fn input_solve1() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
-        let input = parse_races(reader.lines()).unwrap();
+        let input = process_results(reader.lines(), |itr| parse_races(itr))
+            .unwrap()
+            .unwrap();
 
         assert_eq!(solve(input.into_iter()), 170000);
     }
@@ -212,7 +216,9 @@ mod day06 {
     fn input_solve2() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
-        let input = parse_race(reader.lines()).unwrap();
+        let input = process_results(reader.lines(), |itr| parse_race(itr))
+            .unwrap()
+            .unwrap();
 
         assert_eq!(solve_race(input), 20537782);
     }

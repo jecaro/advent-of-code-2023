@@ -1,8 +1,9 @@
+use itertools::process_results;
 use lib::get_args;
 use std::{
     collections::HashMap,
     error::Error,
-    io::{self, stdin, BufRead},
+    io::{stdin, BufRead},
     process::exit,
 };
 
@@ -40,36 +41,33 @@ fn first_last(s: &str) -> Result<u32, Box<dyn Error>> {
     number.parse::<u32>().map_err(Into::into)
 }
 
-fn solve1(itr: impl Iterator<Item = io::Result<String>>) -> Result<u32, Box<dyn Error>> {
-    itr.map(|s| Ok::<String, Box<dyn Error>>(s?.chars().filter(|c| c.is_numeric()).collect()))
-        .map(|s| first_last(&s?))
+fn solve1(itr: impl Iterator<Item = String>) -> Result<u32, Box<dyn Error>> {
+    itr.map(|s| (s.chars().filter(|c| c.is_numeric()).collect::<String>()))
+        .map(|s| first_last(&s))
         .sum()
 }
 
-fn solve2(itr: impl Iterator<Item = io::Result<String>>) -> Result<u32, Box<dyn Error>> {
+fn solve2(itr: impl Iterator<Item = String>) -> Result<u32, Box<dyn Error>> {
     let table = numbers();
     itr.map(|s| {
-        let s_ = s?;
         // loop over the chars
-        Ok::<String, Box<dyn Error>>(
-            s_.chars()
-                .enumerate()
-                .map(|(i, c)| {
-                    // loop over the table
-                    table
-                        .iter()
-                        // if the string starting at i matches a key, return the replacing char
-                        .find_map(|(key, value)| s_[i..].starts_with(key).then(|| value))
-                        // otherwise return the original char
-                        .map_or(c, |value| value.to_owned())
-                })
-                // keep only chars that convert to numeric
-                .filter(|c| c.is_numeric())
-                .collect::<String>(),
-        )
+        s.chars()
+            .enumerate()
+            .map(|(i, c)| {
+                // loop over the table
+                table
+                    .iter()
+                    // if the string starting at i matches a key, return the replacing char
+                    .find_map(|(key, value)| s[i..].starts_with(key).then(|| value))
+                    // otherwise return the original char
+                    .map_or(c, |value| value.to_owned())
+            })
+            // keep only chars that convert to numeric
+            .filter(|c| c.is_numeric())
+            .collect::<String>()
     })
     // now take the first and last numeric char
-    .map(|s| first_last(&s?))
+    .map(|s| first_last(&s))
     // and get the sum
     .sum()
 }
@@ -84,12 +82,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let solve = match arg.as_str() {
-                "-1" => solve1,
-                _ => solve2,
-            };
-
-            let result = solve(stdin().lock().lines())?;
+            let result = process_results(stdin().lock().lines(), |itr| {
+                let solve: fn(_) -> Result<u32, Box<dyn Error>> = match arg.as_str() {
+                    "-1" => solve1,
+                    _ => solve2,
+                };
+                solve(itr)
+            })??;
 
             println!("{}", result)
         }
@@ -100,62 +99,63 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 #[cfg(test)]
 mod day01 {
+    use itertools::process_results;
     use std::fs::File;
-    use std::io;
     use std::io::BufRead;
     use std::io::BufReader;
 
     use crate::solve1;
     use crate::solve2;
 
-    fn input1() -> Vec<io::Result<String>> {
-        vec!["1abc2", "pqr3stu8vwx", "a1b2c3d4e5f", "treb7uchet"]
-            .iter()
-            .map(|s| Ok(s.to_string()))
-            .collect()
-    }
+    const INPUT1: &str = "\
+        1abc2\n\
+        pqr3stu8vwx\n\
+        a1b2c3d4e5f\n\
+        treb7uchet";
+
+    const INPUT2: &str = "\
+        two1nine\n\
+        eightwothree\n\
+        abcone2threexyz\n\
+        xtwone3four\n\
+        4nineeightseven2\n\
+        zoneight234\n\
+        7pqrstsixteen";
 
     #[test]
     fn example1_solve1() {
-        assert_eq!(solve1(input1().into_iter()).unwrap(), 142);
+        assert_eq!(solve1(INPUT1.lines().map(|s| s.to_string())).unwrap(), 142);
     }
 
     #[test]
     fn example1_solve2() {
-        assert_eq!(solve2(input1().into_iter()).unwrap(), 142);
+        assert_eq!(solve2(INPUT1.lines().map(|s| s.to_string())).unwrap(), 142);
     }
 
     #[test]
     fn input_solve1() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
+        let result = process_results(reader.lines(), |itr| solve1(itr))
+            .unwrap()
+            .unwrap();
 
-        assert_eq!(solve1(reader.lines()).unwrap(), 56397);
+        assert_eq!(result, 56397);
     }
 
     #[test]
     fn input_solve2() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
+        let result = process_results(reader.lines(), |itr| solve2(itr))
+            .unwrap()
+            .unwrap();
 
-        assert_eq!(solve2(reader.lines()).unwrap(), 55701);
+        assert_eq!(result, 55701);
     }
 
     #[test]
     fn example2_solve2() {
-        let input: Vec<_> = vec![
-            "two1nine",
-            "eightwothree",
-            "abcone2threexyz",
-            "xtwone3four",
-            "4nineeightseven2",
-            "zoneight234",
-            "7pqrstsixteen",
-        ]
-        .iter()
-        .map(|s| Ok(s.to_string()))
-        .collect();
-
-        assert_eq!(solve2(input.into_iter()).unwrap(), 281);
+        assert_eq!(solve2(INPUT2.lines().map(|s| s.to_string())).unwrap(), 281);
     }
 }

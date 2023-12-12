@@ -1,3 +1,4 @@
+use itertools::process_results;
 use lib::get_args;
 use std::{
     error::Error,
@@ -21,7 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             };
 
             let input = io::stdin().lock().lines();
-            let result = solve(input, solve_line)?;
+            let result = process_results(input, |itr| solve(itr, solve_line))??;
 
             println!("{}", result)
         }
@@ -60,11 +61,11 @@ fn solve_line2(numbers: Vec<i32>) -> Result<i32, Box<dyn Error>> {
 }
 
 fn solve(
-    itr: impl Iterator<Item = io::Result<String>>,
+    itr: impl Iterator<Item = String>,
     solve_line: fn(Vec<i32>) -> Result<i32, Box<dyn Error>>,
 ) -> Result<i32, Box<dyn Error>> {
     itr.map(|line| {
-        let parsed_lined = parse_line(line?)?;
+        let parsed_lined = parse_line(line)?;
         solve_line(parsed_lined)
     })
     .sum()
@@ -76,6 +77,8 @@ mod day09 {
         fs::File,
         io::{BufRead, BufReader},
     };
+
+    use itertools::process_results;
 
     use crate::{parse_line, solve, solve_line1, solve_line2};
 
@@ -140,13 +143,13 @@ mod day09 {
 
     #[test]
     fn test_solve1_lines() {
-        let result = solve(example().into_iter().map(Ok), solve_line1).unwrap();
+        let result = solve(example().into_iter(), solve_line1).unwrap();
         assert_eq!(result, 114);
     }
 
     #[test]
     fn test_solve2_lines() {
-        let result = solve(example().into_iter().map(Ok), solve_line2).unwrap();
+        let result = solve(example().into_iter(), solve_line2).unwrap();
         assert_eq!(result, 2);
     }
 
@@ -154,15 +157,21 @@ mod day09 {
     fn test_solve1_input() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
+        let result = process_results(reader.lines(), |itr| solve(itr, solve_line1))
+            .unwrap()
+            .unwrap();
 
-        assert_eq!(solve(reader.lines(), solve_line1).unwrap(), 1969958987);
+        assert_eq!(result, 1969958987);
     }
 
     #[test]
     fn test_solve2_input() {
         let file = File::open("input").unwrap();
         let reader = BufReader::new(file);
+        let result = process_results(reader.lines(), |itr| solve(itr, solve_line2))
+            .unwrap()
+            .unwrap();
 
-        assert_eq!(solve(reader.lines(), solve_line2).unwrap(), 1068);
+        assert_eq!(result, 1068);
     }
 }
