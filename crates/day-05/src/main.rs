@@ -1,9 +1,9 @@
-use itertools::{process_results, Itertools};
+use itertools::Itertools;
 use lib::{get_args, INVALID_INPUT};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::{
     error::Error,
-    io::{self, BufRead},
+    io::{stdin, BufRead},
     process::exit,
     str::FromStr,
 };
@@ -18,7 +18,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2_1" || arg == "-2_2" => {
-            let input = process_results(io::stdin().lock().lines(), |itr| parse_input(itr))??;
+            let input = stdin()
+                .lock()
+                .lines()
+                .process_results(|itr| parse_input(itr))??;
             let solve: fn(_) -> Result<u32, Box<dyn Error>> = match arg.as_str() {
                 "-1" => solve1,
                 "-2_1" => solve2_brut_force,
@@ -229,12 +232,13 @@ fn solve2_brut_force_reverse(input: Input) -> Result<u32, Box<dyn Error>> {
 #[cfg(test)]
 mod day05 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
         str::FromStr,
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{
         parse_input, parse_seeds, solve1, solve2_brut_force, solve2_brut_force_reverse, GardenMap,
@@ -461,75 +465,78 @@ mod day05 {
     }
 
     #[test]
-    fn parse_seeds_() {
-        assert_eq!(seeds(), parse_seeds(SEEDS).unwrap());
+    fn parse_seeds_() -> Result<(), Box<dyn Error>> {
+        assert_eq!(seeds(), parse_seeds(SEEDS)?);
+        Ok(())
     }
 
     #[test]
-    fn parse_single_garden_map() {
-        assert_eq!(garden_map1(), GardenMap::from_str(GARDEN_MAP1).unwrap());
-        assert_eq!(garden_map2(), GardenMap::from_str(GARDEN_MAP2).unwrap());
-        assert_eq!(garden_map3(), GardenMap::from_str(GARDEN_MAP3).unwrap());
-        assert_eq!(garden_map4(), GardenMap::from_str(GARDEN_MAP4).unwrap());
-        assert_eq!(garden_map5(), GardenMap::from_str(GARDEN_MAP5).unwrap());
-        assert_eq!(garden_map6(), GardenMap::from_str(GARDEN_MAP6).unwrap());
-        assert_eq!(garden_map7(), GardenMap::from_str(GARDEN_MAP7).unwrap());
+    fn parse_single_garden_map() -> Result<(), Box<dyn Error>> {
+        assert_eq!(garden_map1(), GardenMap::from_str(GARDEN_MAP1)?);
+        assert_eq!(garden_map2(), GardenMap::from_str(GARDEN_MAP2)?);
+        assert_eq!(garden_map3(), GardenMap::from_str(GARDEN_MAP3)?);
+        assert_eq!(garden_map4(), GardenMap::from_str(GARDEN_MAP4)?);
+        assert_eq!(garden_map5(), GardenMap::from_str(GARDEN_MAP5)?);
+        assert_eq!(garden_map6(), GardenMap::from_str(GARDEN_MAP6)?);
+        assert_eq!(garden_map7(), GardenMap::from_str(GARDEN_MAP7)?);
+        Ok(())
     }
 
     #[test]
-    fn parse_input_() {
+    fn parse_input_() -> Result<(), Box<dyn Error>> {
         assert_eq!(
             input1(),
-            parse_input(input_str().lines().map(|s| s.to_string())).unwrap()
+            parse_input(input_str().lines().map(|s| s.to_string()))?
         );
+        Ok(())
     }
 
     #[test]
-    fn example_solve1() {
-        assert_eq!(solve1(input1()).unwrap(), 35);
+    fn example_solve1() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve1(input1())?, 35);
+        Ok(())
     }
 
     #[test]
-    fn example_solve2_brut_force() {
-        assert_eq!(solve2_brut_force(input1()).unwrap(), 46);
+    fn example_solve2_brut_force() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve2_brut_force(input1())?, 46);
+        Ok(())
     }
 
     #[test]
-    fn example_solve2_brut_force_reverse() {
-        assert_eq!(solve2_brut_force_reverse(input1()).unwrap(), 46);
+    fn example_solve2_brut_force_reverse() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve2_brut_force_reverse(input1())?, 46);
+        Ok(())
     }
 
     #[test]
-    fn input_solve1() {
-        let file = File::open("input").unwrap();
+    fn input_solve1() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let input = process_results(reader.lines(), |itr| parse_input(itr))
-            .unwrap()
-            .unwrap();
+        let input = reader.lines().process_results(|itr| parse_input(itr))??;
 
-        assert_eq!(solve1(input).unwrap(), 382895070);
+        assert_eq!(solve1(input)?, 382895070);
+        Ok(())
     }
 
     #[test]
-    fn input_solve2_brut_force_reverse() {
-        let file = File::open("input").unwrap();
+    fn input_solve2_brut_force_reverse() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let input = process_results(reader.lines(), |itr| parse_input(itr))
-            .unwrap()
-            .unwrap();
+        let input = reader.lines().process_results(|itr| parse_input(itr))??;
 
-        assert_eq!(solve2_brut_force_reverse(input).unwrap(), 17729182);
+        assert_eq!(solve2_brut_force_reverse(input)?, 17729182);
+        Ok(())
     }
 
     // This takes too much time for tests
     // #[test]
-    // fn input_solve2() {
-    //     let file = File::open("input").unwrap();
+    // fn input_solve2() -> Result<(), Box<dyn Error>> {
+    //     let file = File::open("input")?;
     //     let reader = BufReader::new(file);
-    //     let input = process_results(reader.lines(), |itr| parse_input(itr))
-    //         .unwrap()
-    //         .unwrap();
+    //     let input = reader.lines().process_results(|itr| parse_input(itr))??;
 
-    //     assert_eq!(solve2_brut_force(input).unwrap(), 17729182);
+    //     assert_eq!(solve2_brut_force(input)?, 17729182);
+    //     Ok(())
     // }
 }

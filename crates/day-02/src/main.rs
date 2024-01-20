@@ -1,7 +1,8 @@
+use itertools::Itertools;
 use lib::{get_args, INVALID_INPUT};
 use std::{
     error::Error,
-    io::{self, BufRead},
+    io::{stdin, BufRead},
     process::exit,
     str::FromStr,
 };
@@ -20,23 +21,23 @@ fn usage(prog_name: String) {
 fn main() -> Result<(), Box<dyn Error>> {
     let (prog_name, args) = get_args()?;
 
-    let games = io::stdin()
-        .lock()
-        .lines()
-        .map(|line| Game::from_str(&line?));
     match args.get(0) {
-        Some(arg) if arg == "-1" => {
-            let result = solve1(&BAG, games);
-
-            println!("{}", result?);
-        }
-        Some(arg) if arg == "-2" => {
-            let result = solve2(games);
-
-            println!("{}", result?);
+        Some(arg) if arg == "-1" || arg == "-2" => {
+            let games = stdin().lock().lines().map(|line| Game::from_str(&line?));
+            games.process_results(|games| match args.get(0) {
+                Some(arg) if arg == "-1" => {
+                    let result = solve1(&BAG, games);
+                    println!("{}", result);
+                }
+                Some(arg) if arg == "-2" => {
+                    let result = solve2(games);
+                    println!("{}", result);
+                }
+                _ => usage(prog_name),
+            })?;
         }
         _ => usage(prog_name),
-    }
+    };
     Ok(())
 }
 
@@ -63,11 +64,9 @@ fn min(draws: &[Cubes]) -> u32 {
     power(&min)
 }
 
-fn solve2(
-    games: impl Iterator<Item = Result<Game, Box<dyn Error>>>,
-) -> Result<u32, Box<dyn Error>> {
+fn solve2(games: impl Iterator<Item = Game>) -> u32 {
     games
-        .map(|game| -> Result<u32, Box<dyn Error>> { Ok(min(game?.draws.as_slice())) })
+        .map(|game| -> u32 { min(game.draws.as_slice()) })
         .sum()
 }
 
@@ -83,20 +82,14 @@ fn game_possible(bag: &Cubes, game: &Game) -> bool {
     game.draws.iter().all(|draw| draw_possible(bag, draw))
 }
 
-fn solve1(
-    bag: &Cubes,
-    games: impl Iterator<Item = Result<Game, Box<dyn Error>>>,
-) -> Result<u32, Box<dyn Error>> {
+fn solve1(bag: &Cubes, games: impl Iterator<Item = Game>) -> u32 {
     games
-        .filter_map(|game| match game {
-            Ok(game) => {
-                if game_possible(bag, &game) {
-                    Some(Ok(game.id))
-                } else {
-                    None
-                }
+        .filter_map(|game| {
+            if game_possible(bag, &game) {
+                Some(game.id)
+            } else {
+                None
             }
-            Err(e) => Some(Err(e)),
         })
         .sum()
 }
@@ -144,7 +137,9 @@ impl FromStr for Cubes {
 
 #[cfg(test)]
 mod day02 {
+    use itertools::Itertools;
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
         str::FromStr,
@@ -274,16 +269,17 @@ mod day02 {
     }
 
     #[test]
-    fn parse_single_game() {
-        assert_eq!(game_1(), Game::from_str(GAME_1_STR).unwrap(),);
-        assert_eq!(game_2(), Game::from_str(GAME_2_STR).unwrap(),);
-        assert_eq!(game_3(), Game::from_str(GAME_3_STR).unwrap(),);
-        assert_eq!(game_4(), Game::from_str(GAME_4_STR).unwrap(),);
-        assert_eq!(game_5(), Game::from_str(GAME_5_STR).unwrap(),);
+    fn parse_single_game() -> Result<(), Box<dyn Error>> {
+        assert_eq!(game_1(), Game::from_str(GAME_1_STR)?);
+        assert_eq!(game_2(), Game::from_str(GAME_2_STR)?);
+        assert_eq!(game_3(), Game::from_str(GAME_3_STR)?);
+        assert_eq!(game_4(), Game::from_str(GAME_4_STR)?);
+        assert_eq!(game_5(), Game::from_str(GAME_5_STR)?);
+        Ok(())
     }
 
     #[test]
-    fn parse_multiple_games() {
+    fn parse_multiple_games() -> Result<(), Box<dyn Error>> {
         let games_str = format!(
             "{}\n{}\n{}\n{}\n{}",
             GAME_1_STR, GAME_2_STR, GAME_3_STR, GAME_4_STR, GAME_5_STR
@@ -294,36 +290,44 @@ mod day02 {
             games_str
                 .lines()
                 .map(Game::from_str)
-                .collect::<Result<Vec<_>, _>>()
-                .unwrap(),
+                .collect::<Result<Vec<_>, _>>()?,
         );
+        Ok(())
     }
 
     #[test]
     fn example_solve1() {
-        assert_eq!(solve1(&BAG, games().into_iter().map(Ok)).unwrap(), 8);
+        assert_eq!(solve1(&BAG, games().into_iter()), 8);
     }
 
     #[test]
     fn example_solve2() {
-        assert_eq!(solve2(games().into_iter().map(Ok)).unwrap(), 2286);
+        assert_eq!(solve2(games().into_iter()), 2286);
     }
 
     #[test]
-    fn input_solve1() {
-        let file = File::open("input").unwrap();
+    fn input_solve1() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let games = reader.lines().map(|l| Game::from_str(&l?));
+        let result = reader.lines().process_results(|itr| {
+            itr.map(|l| Game::from_str(&l))
+                .process_results(|itr| solve1(&BAG, itr))
+        })??;
 
-        assert_eq!(solve1(&BAG, games).unwrap(), 2439);
+        assert_eq!(result, 2439);
+        Ok(())
     }
 
     #[test]
-    fn input_solve2() {
-        let file = File::open("input").unwrap();
+    fn input_solve2() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let games = reader.lines().map(|l| Game::from_str(&l?));
+        let result = reader.lines().process_results(|itr| {
+            itr.map(|l| Game::from_str(&l))
+                .process_results(|itr| solve2(itr))
+        })??;
 
-        assert_eq!(solve2(games).unwrap(), 63711);
+        assert_eq!(result, 63711);
+        Ok(())
     }
 }

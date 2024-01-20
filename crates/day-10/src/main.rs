@@ -1,10 +1,10 @@
-use itertools::process_results;
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     cell::RefCell,
     collections::HashSet,
     error::Error,
-    io::{self, BufRead},
+    io::{stdin, BufRead},
     process::exit,
     rc::Rc,
 };
@@ -20,8 +20,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
             let solve = if arg == "-1" { solve1 } else { solve2 };
-            let input = io::stdin().lock().lines();
-            let maze = process_results(input, |itr| parse_maze(itr))??;
+            let maze = stdin()
+                .lock()
+                .lines()
+                .process_results(|itr| parse_maze(itr))??;
             let result = solve(maze)?;
 
             println!("{}", result);
@@ -181,18 +183,16 @@ fn next(
     last_direction: Option<Direction>,
     position: Coordinates,
 ) -> Result<Vec<(Direction, Coordinates)>, Box<dyn Error>> {
-    process_results(
-        all_direction()
-            .iter()
-            .filter(|direction| Some(opposite(**direction)) != last_direction)
-            .map(|direction| -> Result<_, Box<dyn Error>> {
-                let from = valid_from(maze, position, *direction)?;
-                let to = valid_to(maze, position, *direction);
-                let direction_and_to = to.map(|to| (*direction, to));
-                Ok(if from { direction_and_to } else { None })
-            }),
-        |itr| itr.filter_map(|r| r).collect::<Vec<_>>(),
-    )
+    all_direction()
+        .iter()
+        .filter(|direction| Some(opposite(**direction)) != last_direction)
+        .map(|direction| -> Result<_, Box<dyn Error>> {
+            let from = valid_from(maze, position, *direction)?;
+            let to = valid_to(maze, position, *direction);
+            let direction_and_to = to.map(|to| (*direction, to));
+            Ok(if from { direction_and_to } else { None })
+        })
+        .process_results(|itr| itr.filter_map(|r| r).collect::<Vec<_>>())
 }
 
 fn create_tree(maze: &Maze) -> Result<Rc<RefCell<Tree>>, Box<dyn Error>> {
@@ -365,11 +365,12 @@ fn solve2(maze: Maze) -> Result<u32, Box<dyn Error>> {
 #[cfg(test)]
 mod day10 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{parse_maze, solve1, solve2, Maze, Tile};
 
@@ -503,64 +504,65 @@ mod day10 {
         L7JLJL-JLJLJL--JLJ.L";
 
     #[test]
-    fn test_parse_maze() {
-        assert_eq!(
-            parse_maze(EXAMPLE1.lines().map(|s| s.to_string())).unwrap(),
-            example1()
-        );
-        assert_eq!(
-            parse_maze(EXAMPLE2.lines().map(|s| s.to_string())).unwrap(),
-            example2()
-        );
+    fn test_parse_maze() -> Result<(), Box<dyn Error>> {
+        let result = parse_maze(EXAMPLE1.lines().map(|s| s.to_string()))?;
+        assert_eq!(result, example1());
+
+        let result = parse_maze(EXAMPLE2.lines().map(|s| s.to_string()))?;
+        assert_eq!(result, example2());
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_example1() {
-        assert_eq!(solve1(example1()).unwrap(), 4);
+    fn test_solve1_example1() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve1(example1())?, 4);
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_example2() {
-        assert_eq!(solve1(example2()).unwrap(), 8);
+    fn test_solve1_example2() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve1(example2())?, 8);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_example3() {
-        let maze = parse_maze(EXAMPLE3.lines().map(|s| s.to_string())).unwrap();
-        assert_eq!(solve2(maze).unwrap(), 4);
+    fn test_solve2_example3() -> Result<(), Box<dyn Error>> {
+        let maze = parse_maze(EXAMPLE3.lines().map(|s| s.to_string()))?;
+        assert_eq!(solve2(maze)?, 4);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_example4() {
-        let maze = parse_maze(EXAMPLE4.lines().map(|s| s.to_string())).unwrap();
-        assert_eq!(solve2(maze).unwrap(), 8);
+    fn test_solve2_example4() -> Result<(), Box<dyn Error>> {
+        let maze = parse_maze(EXAMPLE4.lines().map(|s| s.to_string()))?;
+        assert_eq!(solve2(maze)?, 8);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_example5() {
-        let maze = parse_maze(EXAMPLE5.lines().map(|s| s.to_string())).unwrap();
-        assert_eq!(solve2(maze).unwrap(), 10);
+    fn test_solve2_example5() -> Result<(), Box<dyn Error>> {
+        let maze = parse_maze(EXAMPLE5.lines().map(|s| s.to_string()))?;
+        assert_eq!(solve2(maze)?, 10);
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let maze = process_results(reader.lines(), |itr| parse_maze(itr))
-            .unwrap()
-            .unwrap();
+        let maze = reader.lines().process_results(|itr| parse_maze(itr))??;
 
-        assert_eq!(solve1(maze).unwrap(), 6890);
+        assert_eq!(solve1(maze)?, 6890);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let maze = process_results(reader.lines(), |itr| parse_maze(itr))
-            .unwrap()
-            .unwrap();
+        let maze = reader.lines().process_results(|itr| parse_maze(itr))??;
 
-        assert_eq!(solve2(maze).unwrap(), 453);
+        assert_eq!(solve2(maze)?, 453);
+        Ok(())
     }
 }

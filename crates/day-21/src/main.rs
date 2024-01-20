@@ -1,4 +1,4 @@
-use itertools::process_results;
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     collections::{HashMap, HashSet},
@@ -17,7 +17,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let (grid, start) = process_results(stdin().lock().lines(), |lines| parse(lines))??;
+            let (grid, start) = stdin()
+                .lock()
+                .lines()
+                .process_results(|lines| parse(lines))??;
 
             let result = if arg == "-1" {
                 solve1(&grid, &start) as i64
@@ -179,11 +182,12 @@ fn parse(lines: impl Iterator<Item = String>) -> Result<(Grid, Coordinates), Box
 #[cfg(test)]
 mod day21 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{advance_count, parse, solve1, solve2, valid1, valid2, Coordinates};
 
@@ -201,26 +205,30 @@ mod day21 {
         ...........";
 
     #[test]
-    fn test_parse() {
-        let (grid, start) = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_parse() -> Result<(), Box<dyn Error>> {
+        let (grid, start) = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
 
         assert_eq!(grid.width, 11);
         assert_eq!(grid.height, 11);
         assert_eq!(grid.rocks.len(), 40);
         assert_eq!(start, Coordinates { x: 5, y: 5 });
+
+        Ok(())
     }
 
     #[test]
-    fn test_advance_count_valid1() {
-        let (grid, start) = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_advance_count_valid1() -> Result<(), Box<dyn Error>> {
+        let (grid, start) = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
 
         let result = advance_count(&grid, &start, 6, valid1);
         assert_eq!(result, 16);
+
+        Ok(())
     }
 
     #[test]
-    fn test_advance_count_valid2() {
-        let (grid, start) = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_advance_count_valid2() -> Result<(), Box<dyn Error>> {
+        let (grid, start) = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
 
         let result = advance_count(&grid, &start, 6, valid2);
         assert_eq!(result, 16);
@@ -244,29 +252,31 @@ mod day21 {
 
         // let result = advance_count(&grid, &start, 5000, valid2);
         // assert_eq!(result, 16733044);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let (grid, start) = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
+        let (grid, start) = reader.lines().process_results(|itr| parse(itr))??;
 
         let result = solve1(&grid, &start);
         assert_eq!(result, 3758);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let (grid, start) = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
+        let (grid, start) = reader.lines().process_results(|itr| parse(itr))??;
 
-        let result = solve2(&grid, &start).unwrap();
+        let result = solve2(&grid, &start)?;
         assert_eq!(result, 621494544278648);
+
+        Ok(())
     }
 }

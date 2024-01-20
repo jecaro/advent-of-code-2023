@@ -1,5 +1,5 @@
 use itertools::intersperse;
-use itertools::{process_results, Itertools};
+use itertools::Itertools;
 use lib::{get_args, INVALID_INPUT};
 use std::collections::HashMap;
 use std::{
@@ -19,16 +19,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let result = process_results(
-                stdin()
-                    .lock()
-                    .lines()
-                    .map(|line| -> Result<_, Box<dyn Error>> { parse_line(line?) }),
-                |itr| match arg.as_str() {
-                    "-1" => solve1(itr),
-                    _ => solve2(itr),
-                },
-            )?;
+            let result = stdin().lock().lines().process_results(|itr| {
+                itr.map(|line| parse_line(line))
+                    .process_results(|itr| match arg.as_str() {
+                        "-1" => solve1(itr),
+                        _ => solve2(itr),
+                    })
+            })??;
 
             println!("{}", result);
         }
@@ -264,11 +261,12 @@ fn parse_line(line: String) -> Result<InputLine, Box<dyn Error>> {
 #[cfg(test)]
 mod day12 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{
         combinations1, combinations2, parse_line, repeat_five, solve1, solve2, InputLine, Spring,
@@ -543,21 +541,23 @@ mod day12 {
     }
 
     #[test]
-    fn test_parse_example1() {
+    fn test_parse_example1() -> Result<(), Box<dyn Error>> {
         let parsed = EXAMPLE1
             .lines()
-            .map(|line| parse_line(line.to_string()).unwrap())
-            .collect::<Vec<_>>();
+            .map(|line| parse_line(line.to_string()))
+            .collect::<Result<Vec<_>, _>>()?;
         assert_eq!(parsed, example1());
+        Ok(())
     }
 
     #[test]
-    fn test_parse_example2() {
+    fn test_parse_example2() -> Result<(), Box<dyn Error>> {
         let parsed = example2_str()
             .lines()
-            .map(|line| parse_line(line.to_string()).unwrap())
-            .collect::<Vec<_>>();
+            .map(|line| parse_line(line.to_string()))
+            .collect::<Result<Vec<_>, _>>()?;
         assert_eq!(parsed, example2());
+        Ok(())
     }
 
     #[test]
@@ -669,29 +669,28 @@ mod day12 {
     }
 
     #[test]
-    fn test_combinations1_input() {
-        let file = File::open("input").unwrap();
+    fn test_combinations1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let result = process_results(
-            reader.lines().map(|line| parse_line(line.unwrap())),
-            |itr| solve1(itr),
-        )
-        .unwrap();
+        let result = reader.lines().process_results(|itr| {
+            itr.map(|line| parse_line(line))
+                .process_results(|itr| solve1(itr))
+        })??;
 
         assert_eq!(result, 7047);
+        Ok(())
     }
 
     #[test]
-    fn test_combinations2_input() {
-        let file = File::open("input").unwrap();
+    fn test_combinations2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-
-        let result = process_results(
-            reader.lines().map(|line| parse_line(line.unwrap())),
-            |itr| solve2(itr),
-        )
-        .unwrap();
+        let result = reader.lines().process_results(|itr| {
+            itr.map(|line| parse_line(line))
+                .process_results(|itr| solve2(itr))
+        })??;
 
         assert_eq!(result, 17391848518844);
+        Ok(())
     }
 }

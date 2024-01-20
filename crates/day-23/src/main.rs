@@ -1,4 +1,4 @@
-use itertools::process_results;
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     collections::{HashMap, HashSet, VecDeque},
@@ -18,13 +18,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
             let result = if arg == "-1" {
-                let map = process_results(stdin().lock().lines(), |lines| parse(lines))??;
+                let map = stdin()
+                    .lock()
+                    .lines()
+                    .process_results(|lines| parse(lines))??;
 
                 solve1(&map)?
             } else {
-                let map = process_results(stdin().lock().lines(), |lines| {
-                    parse(lines.map(|line| remove_slopes(&line)))
-                })??;
+                let map = stdin()
+                    .lock()
+                    .lines()
+                    .process_results(|lines| parse(lines.map(|line| remove_slopes(&line))))??;
 
                 solve2(&map)?
             };
@@ -307,11 +311,12 @@ fn solve1(map: &Map) -> Result<usize, Box<dyn Error>> {
 #[cfg(test)]
 mod day23 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{parse, remove_slopes, solve1, solve2};
 
@@ -341,58 +346,66 @@ mod day23 {
         #####################.#";
 
     #[test]
-    fn test_parse() {
-        let map = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_parse() -> Result<(), Box<dyn Error>> {
+        let map = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
 
         assert_eq!(map.width, 23);
         assert_eq!(map.height, 23);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve1() {
-        let map = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_solve1() -> Result<(), Box<dyn Error>> {
+        let map = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
 
-        assert_eq!(solve1(&map).unwrap(), 94);
+        assert_eq!(solve1(&map)?, 94);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_noslopes() {
-        let map = parse(EXAMPLE.lines().map(remove_slopes)).unwrap();
+    fn test_solve1_noslopes() -> Result<(), Box<dyn Error>> {
+        let map = parse(EXAMPLE.lines().map(remove_slopes))?;
 
-        assert_eq!(solve1(&map).unwrap(), 154);
+        assert_eq!(solve1(&map)?, 154);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve2() {
-        let map = parse(EXAMPLE.lines().map(remove_slopes)).unwrap();
+    fn test_solve2() -> Result<(), Box<dyn Error>> {
+        let map = parse(EXAMPLE.lines().map(remove_slopes))?;
 
-        assert_eq!(solve2(&map).unwrap(), 154);
+        assert_eq!(solve2(&map)?, 154);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let map = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
-        let result = solve1(&map).unwrap();
+        let map = reader.lines().process_results(|itr| parse(itr))??;
+        let result = solve1(&map)?;
 
         assert_eq!(result, 1966);
+
+        Ok(())
     }
 
     // too slow for running in tests
     // #[test]
-    // fn test_solve2_input() {
-    //     let file = File::open("input").unwrap();
+    // fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+    //     let file = File::open("input")?;
     //     let reader = BufReader::new(file);
-    //     let map = process_results(reader.lines(), |itr| {
-    //         parse(itr.map(|line| remove_slopes(&line)))
-    //     })
-    //     .unwrap()
-    //     .unwrap();
-    //     let result = solve2(&map).unwrap();
+    //     let map = reader
+    //         .lines()
+    //         .process_results(|itr| parse(itr.map(|line| remove_slopes(&line))))??;
+    //     let result = solve2(&map)?;
 
     //     assert_eq!(result, 6286);
+
+    //     Ok(())
     // }
 }

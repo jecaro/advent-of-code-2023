@@ -1,4 +1,4 @@
-use itertools::process_results;
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     collections::HashMap,
@@ -82,7 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let result = process_results(stdin().lock().lines(), |itr| {
+            let result = stdin().lock().lines().process_results(|itr| {
                 let solve: fn(_) -> Result<u32, Box<dyn Error>> = match arg.as_str() {
                     "-1" => solve1,
                     _ => solve2,
@@ -99,7 +99,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 #[cfg(test)]
 mod day01 {
-    use itertools::process_results;
+    use itertools::Itertools;
+    use std::error::Error;
     use std::fs::File;
     use std::io::BufRead;
     use std::io::BufReader;
@@ -123,39 +124,40 @@ mod day01 {
         7pqrstsixteen";
 
     #[test]
-    fn example1_solve1() {
-        assert_eq!(solve1(INPUT1.lines().map(|s| s.to_string())).unwrap(), 142);
+    fn example1_solve1() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve1(INPUT1.lines().map(|s| s.to_string()))?, 142);
+        Ok(())
     }
 
     #[test]
-    fn example1_solve2() {
-        assert_eq!(solve2(INPUT1.lines().map(|s| s.to_string())).unwrap(), 142);
+    fn example1_solve2() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve2(INPUT1.lines().map(|s| s.to_string()))?, 142);
+        Ok(())
     }
 
     #[test]
-    fn input_solve1() {
-        let file = File::open("input").unwrap();
+    fn input_solve1() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let result = process_results(reader.lines(), |itr| solve1(itr))
-            .unwrap()
-            .unwrap();
+        let result = reader.lines().process_results(|itr| solve1(itr))??;
 
         assert_eq!(result, 56397);
+        Ok(())
     }
 
     #[test]
-    fn input_solve2() {
-        let file = File::open("input").unwrap();
+    fn input_solve2() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let result = process_results(reader.lines(), |itr| solve2(itr))
-            .unwrap()
-            .unwrap();
+        let result = reader.lines().process_results(|itr| solve2(itr))??;
 
         assert_eq!(result, 55701);
+        Ok(())
     }
 
     #[test]
-    fn example2_solve2() {
-        assert_eq!(solve2(INPUT2.lines().map(|s| s.to_string())).unwrap(), 281);
+    fn example2_solve2() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve2(INPUT2.lines().map(|s| s.to_string()))?, 281);
+        Ok(())
     }
 }

@@ -1,8 +1,8 @@
-use itertools::{process_results, Itertools};
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     error::Error,
-    io::{self, BufRead},
+    io::{stdin, BufRead},
     process::exit,
 };
 
@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let result = process_results(io::stdin().lock().lines(), |itr| {
+            let result = stdin().lock().lines().process_results(|itr| {
                 let input = itr.map(|line| {
                     char_to_located_element(line.clone().chars()).collect::<Vec<LocatedElement>>()
                 });
@@ -209,7 +209,7 @@ mod day03 {
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{char_to_located_element, solve1, solve2, Element, LocatedElement};
 
@@ -403,26 +403,28 @@ mod day03 {
     }
 
     #[test]
-    fn input_solve1() {
-        let file = File::open("input").unwrap();
+    fn input_solve1() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let input = reader
+        let result = reader
             .lines()
-            .map(|line| Ok::<_, Box<dyn Error>>(char_to_located_element(line?.chars()).collect()));
-        let result = process_results(input, |itr| solve1(itr)).unwrap();
+            .map(|line| Ok::<_, Box<dyn Error>>(char_to_located_element(line?.chars()).collect()))
+            .process_results(|itr| solve1(itr))?;
 
         assert_eq!(result, 533784);
+        Ok(())
     }
 
     #[test]
-    fn input_solve2() {
-        let file = File::open("input").unwrap();
+    fn input_solve2() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let input = reader
+        let result = reader
             .lines()
-            .map(|line| Ok::<_, Box<dyn Error>>(char_to_located_element(line?.chars()).collect()));
-        let result = process_results(input, |itr| solve2(itr)).unwrap();
+            .map(|line| Ok::<_, Box<dyn Error>>(char_to_located_element(line?.chars()).collect()))
+            .process_results(|itr| solve2(itr))?;
 
         assert_eq!(result, 78826761);
+        Ok(())
     }
 }

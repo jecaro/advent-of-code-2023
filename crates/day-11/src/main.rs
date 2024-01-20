@@ -1,12 +1,7 @@
-use itertools::process_results;
 use itertools::Itertools;
 use lib::get_args;
-use std::{
-    collections::HashSet,
-    error::Error,
-    io::{self, BufRead},
-    process::exit,
-};
+use std::io::stdin;
+use std::{collections::HashSet, error::Error, io::BufRead, process::exit};
 
 fn usage(prog_name: String) {
     println!("Usage: {} [-1|-2|-h]", prog_name);
@@ -19,8 +14,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
             let factor = if arg == "-1" { 1 } else { 1_000_000 - 1 };
-            let input = io::stdin().lock().lines();
-            let universe = process_results(input, |itr| parse(itr))?;
+            let universe = stdin().lock().lines().process_results(|itr| parse(itr))?;
             let expanded = expand(&universe, factor);
             let result = solve(&expanded)?;
 
@@ -120,9 +114,12 @@ fn distance(a: &(i64, i64), b: &(i64, i64)) -> i64 {
 #[cfg(test)]
 mod day11 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
+
+    use itertools::Itertools;
 
     use crate::{expand, parse, solve, Universe};
 
@@ -187,38 +184,42 @@ mod day11 {
     }
 
     #[test]
-    fn test_solve1() {
+    fn test_solve1() -> Result<(), Box<dyn Error>> {
         let universe = parse(EXAMPLE1.lines().map(|s| s.to_string()));
         let expanded = expand(&universe, 1);
 
-        assert_eq!(solve(&expanded).unwrap(), 374);
+        assert_eq!(solve(&expanded)?, 374);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2() {
+    fn test_solve2() -> Result<(), Box<dyn Error>> {
         let universe = parse(EXAMPLE1.lines().map(|s| s.to_string()));
         let expanded = expand(&universe, 10 - 1);
 
-        assert_eq!(solve(&expanded).unwrap(), 1030);
+        assert_eq!(solve(&expanded)?, 1030);
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let universe = parse(reader.lines().map(|s| s.unwrap()));
+        let universe = reader.lines().process_results(|itr| parse(itr))?;
         let expanded = expand(&universe, 1);
 
-        assert_eq!(solve(&expanded).unwrap(), 9684228);
+        assert_eq!(solve(&expanded)?, 9684228);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let universe = parse(reader.lines().map(|s| s.unwrap()));
+        let universe = reader.lines().process_results(|itr| parse(itr))?;
         let expanded = expand(&universe, 1_000_000 - 1);
 
-        assert_eq!(solve(&expanded).unwrap(), 483844716556);
+        assert_eq!(solve(&expanded)?, 483844716556);
+        Ok(())
     }
 }

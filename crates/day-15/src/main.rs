@@ -153,7 +153,7 @@ fn solve2(s: &str) -> Result<u64, Box<dyn Error>> {
 
 #[cfg(test)]
 mod day15 {
-    use std::fs::read_to_string;
+    use std::{error::Error, fs::read_to_string};
 
     use crate::{hash, solve1, solve2, Operation, Step};
 
@@ -180,99 +180,103 @@ mod day15 {
     }
 
     #[test]
-    fn test_solve1_input() {
-        let input = read_to_string("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let input = read_to_string("input")?;
         assert_eq!(solve1(&input), 507769);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_example() {
-        assert_eq!(solve2(EXAMPLE).unwrap(), 145);
+    fn test_solve2_example() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve2(EXAMPLE)?, 145);
+        Ok(())
     }
     #[test]
-    fn test_solve2_input() {
-        let input = read_to_string("input").unwrap();
-        assert_eq!(solve2(&input).unwrap(), 269747);
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let input = read_to_string("input")?;
+        assert_eq!(solve2(&input)?, 269747);
+        Ok(())
     }
 
     #[test]
-    fn test_parse() {
+    fn test_parse() -> Result<(), Box<dyn Error>> {
         assert_eq!(
-            "rn=1".parse::<Step>().unwrap(),
+            "rn=1".parse::<Step>()?,
             Step {
                 label: "rn".to_string(),
                 operation: Operation::Focal(1)
             }
         );
         assert_eq!(
-            "cm-".parse::<Step>().unwrap(),
+            "cm-".parse::<Step>()?,
             Step {
                 label: "cm".to_string(),
                 operation: Operation::Remove
             }
         );
         assert_eq!(
-            "qp=3".parse::<Step>().unwrap(),
+            "qp=3".parse::<Step>()?,
             Step {
                 label: "qp".to_string(),
                 operation: Operation::Focal(3)
             }
         );
         assert_eq!(
-            "cm=2".parse::<Step>().unwrap(),
+            "cm=2".parse::<Step>()?,
             Step {
                 label: "cm".to_string(),
                 operation: Operation::Focal(2)
             }
         );
         assert_eq!(
-            "qp-".parse::<Step>().unwrap(),
+            "qp-".parse::<Step>()?,
             Step {
                 label: "qp".to_string(),
                 operation: Operation::Remove
             }
         );
         assert_eq!(
-            "pc=4".parse::<Step>().unwrap(),
+            "pc=4".parse::<Step>()?,
             Step {
                 label: "pc".to_string(),
                 operation: Operation::Focal(4)
             }
         );
         assert_eq!(
-            "ot=9".parse::<Step>().unwrap(),
+            "ot=9".parse::<Step>()?,
             Step {
                 label: "ot".to_string(),
                 operation: Operation::Focal(9)
             }
         );
         assert_eq!(
-            "ab=5".parse::<Step>().unwrap(),
+            "ab=5".parse::<Step>()?,
             Step {
                 label: "ab".to_string(),
                 operation: Operation::Focal(5)
             }
         );
         assert_eq!(
-            "pc-".parse::<Step>().unwrap(),
+            "pc-".parse::<Step>()?,
             Step {
                 label: "pc".to_string(),
                 operation: Operation::Remove
             }
         );
         assert_eq!(
-            "pc=6".parse::<Step>().unwrap(),
+            "pc=6".parse::<Step>()?,
             Step {
                 label: "pc".to_string(),
                 operation: Operation::Focal(6)
             }
         );
         assert_eq!(
-            "ot=7".parse::<Step>().unwrap(),
+            "ot=7".parse::<Step>()?,
             Step {
                 label: "ot".to_string(),
                 operation: Operation::Focal(7)
             }
         );
+        Ok(())
     }
 }

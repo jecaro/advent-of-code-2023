@@ -1,4 +1,4 @@
-use itertools::{process_results, Itertools};
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     collections::{HashMap, HashSet},
@@ -18,7 +18,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let bricks = process_results(stdin().lock().lines(), |lines| parse(lines))??;
+            let bricks = stdin()
+                .lock()
+                .lines()
+                .process_results(|lines| parse(lines))??;
 
             let fallen_bricks = fall(&bricks);
             let result = if arg == "-1" {
@@ -259,11 +262,12 @@ fn move_bottom_to(brick: &Brick, z: i32) -> Brick {
 #[cfg(test)]
 mod day22 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{fall, intersect_xy, parse, solve1, solve2};
 
@@ -277,30 +281,34 @@ mod day22 {
         1,1,8~1,1,9";
 
     #[test]
-    fn test_parse() {
-        let bricks = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_parse() -> Result<(), Box<dyn Error>> {
+        let bricks = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
 
         assert_eq!(bricks.len(), 7);
+
+        Ok(())
     }
 
     #[test]
-    fn test_fall() {
-        let bricks = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_fall() -> Result<(), Box<dyn Error>> {
+        let bricks = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
         let fallen_bricks = fall(&bricks);
 
         assert_eq!(fallen_bricks.len(), 7);
+
+        Ok(())
     }
 
     #[test]
-    fn test_intersect() {
-        let bricks = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
-        let brick_a = &bricks.get(0).unwrap();
-        let brick_b = &bricks.get(1).unwrap();
-        // let brick_c = &bricks.get(2).unwrap();
-        let brick_d = &bricks.get(3).unwrap();
-        let brick_e = &bricks.get(4).unwrap();
-        let brick_f = &bricks.get(5).unwrap();
-        // let brick_g = &bricks.get(6).unwrap();
+    fn test_intersect() -> Result<(), Box<dyn Error>> {
+        let bricks = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
+        let brick_a = &bricks.get(0).ok_or("No brick")?;
+        let brick_b = &bricks.get(1).ok_or("No brick")?;
+        // let brick_c = &bricks.get(2).ok_or("No brick")?;
+        let brick_d = &bricks.get(3).ok_or("No brick")?;
+        let brick_e = &bricks.get(4).ok_or("No brick")?;
+        let brick_f = &bricks.get(5).ok_or("No brick")?;
+        // let brick_g = &bricks.get(6).ok_or("No brick")?;
 
         assert!(intersect_xy(brick_a, brick_b));
         assert!(intersect_xy(brick_b, brick_a));
@@ -308,49 +316,55 @@ mod day22 {
         assert!(intersect_xy(brick_f, brick_d));
         assert!(intersect_xy(brick_e, brick_f));
         assert!(intersect_xy(brick_f, brick_e));
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_example() {
-        let bricks = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_solve1_example() -> Result<(), Box<dyn Error>> {
+        let bricks = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
         let fallen_bricks = fall(&bricks);
         let result = solve1(&fallen_bricks);
 
         assert_eq!(result, 5);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_example() {
-        let bricks = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_solve2_example() -> Result<(), Box<dyn Error>> {
+        let bricks = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
         let fallen_bricks = fall(&bricks);
         let result = solve2(&fallen_bricks);
 
         assert_eq!(result, 7);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let bricks = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
+        let bricks = reader.lines().process_results(|itr| parse(itr))??;
         let fallen_bricks = fall(&bricks);
         let result = solve1(&fallen_bricks);
 
         assert_eq!(result, 432);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let bricks = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
+        let bricks = reader.lines().process_results(|itr| parse(itr))??;
         let fallen_bricks = fall(&bricks);
         let result = solve2(&fallen_bricks);
 
         assert_eq!(result, 63166);
+
+        Ok(())
     }
 }

@@ -1,4 +1,4 @@
-use itertools::{process_results, Itertools};
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     convert::identity,
@@ -17,19 +17,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let result = process_results(stdin().lock().lines(), |itr| -> Result<i32, _> {
-                let patterns = parse(itr);
-                patterns
-                    .iter()
-                    .map(|p| {
-                        if arg == "-1" {
-                            solve_pattern1(p.iter().cloned())
-                        } else {
-                            solve_pattern2(p.iter().cloned())
-                        }
-                    })
-                    .sum::<Result<i32, _>>()
-            })??;
+            let result = stdin()
+                .lock()
+                .lines()
+                .process_results(|itr| -> Result<i32, _> {
+                    let patterns = parse(itr);
+                    patterns
+                        .iter()
+                        .map(|p| {
+                            if arg == "-1" {
+                                solve_pattern1(p.iter().cloned())
+                            } else {
+                                solve_pattern2(p.iter().cloned())
+                            }
+                        })
+                        .sum::<Result<i32, _>>()
+                })??;
 
             println!("{}", result);
         }
@@ -70,7 +73,7 @@ fn get_mirror_horizontally(
         }
     });
 
-    process_results(indexes, |mut itr| itr.find_map(identity))
+    indexes.process_results(|mut itr| itr.find_map(identity))
 }
 
 fn get_mirror_vertically(
@@ -124,8 +127,9 @@ fn parse(itr: impl Iterator<Item = String>) -> Vec<Vec<String>> {
 
 #[cfg(test)]
 mod day13 {
-    use itertools::process_results;
+    use itertools::Itertools;
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
@@ -157,82 +161,94 @@ mod day13 {
     }
 
     #[test]
-    fn test_mirror_vertically() {
-        let result = get_mirror_vertically(EXAMPLE1.lines().map(|s| s.to_string()), 0);
-        assert_eq!(result.unwrap().unwrap(), 5);
+    fn test_mirror_vertically() -> Result<(), Box<dyn Error>> {
+        let result = get_mirror_vertically(EXAMPLE1.lines().map(|s| s.to_string()), 0)?
+            .ok_or("No result")?;
+        assert_eq!(result, 5);
+        Ok(())
     }
 
     #[test]
-    fn test_mirror_horizontally() {
-        let result = get_mirror_horizontally(EXAMPLE2.lines().map(|s| s.to_string()), 0);
-        assert_eq!(result.unwrap().unwrap(), 4);
+    fn test_mirror_horizontally() -> Result<(), Box<dyn Error>> {
+        let result = get_mirror_horizontally(EXAMPLE2.lines().map(|s| s.to_string()), 0)?
+            .ok_or("No result")?;
+        assert_eq!(result, 4);
+        Ok(())
     }
 
     #[test]
-    fn test_solve_pattern1_example1() {
-        let result = solve_pattern1(EXAMPLE1.lines().map(|s| s.to_string()));
-        assert_eq!(result.unwrap(), 5);
+    fn test_solve_pattern1_example1() -> Result<(), Box<dyn Error>> {
+        let result = solve_pattern1(EXAMPLE1.lines().map(|s| s.to_string()))?;
+        assert_eq!(result, 5);
+        Ok(())
     }
 
     #[test]
-    fn test_solve_pattern1_example2() {
-        let result = solve_pattern1(EXAMPLE2.lines().map(|s| s.to_string()));
-        assert_eq!(result.unwrap(), 400);
+    fn test_solve_pattern1_example2() -> Result<(), Box<dyn Error>> {
+        let result = solve_pattern1(EXAMPLE2.lines().map(|s| s.to_string()))?;
+        assert_eq!(result, 400);
+        Ok(())
     }
 
     #[test]
-    fn test_solve_pattern1_both() {
+    fn test_solve_pattern1_both() -> Result<(), Box<dyn Error>> {
         let patterns = parse(both_examples().lines().map(|s| s.to_string()));
         let result = patterns
             .iter()
             .map(|p| solve_pattern1(p.iter().cloned()))
-            .sum::<Result<i32, _>>();
-        assert_eq!(result.unwrap(), 405);
+            .sum::<Result<i32, _>>()?;
+        assert_eq!(result, 405);
+        Ok(())
     }
 
     #[test]
-    fn test_solve_pattern2_example1() {
-        let result = solve_pattern2(EXAMPLE1.lines().map(|s| s.to_string()));
-        assert_eq!(result.unwrap(), 300);
+    fn test_solve_pattern2_example1() -> Result<(), Box<dyn Error>> {
+        let result = solve_pattern2(EXAMPLE1.lines().map(|s| s.to_string()))?;
+        assert_eq!(result, 300);
+        Ok(())
     }
 
     #[test]
-    fn test_solve_pattern2_example2() {
-        let result = solve_pattern2(EXAMPLE2.lines().map(|s| s.to_string()));
-        assert_eq!(result.unwrap(), 100);
+    fn test_solve_pattern2_example2() -> Result<(), Box<dyn Error>> {
+        let result = solve_pattern2(EXAMPLE2.lines().map(|s| s.to_string()))?;
+        assert_eq!(result, 100);
+        Ok(())
     }
 
     #[test]
-    fn test_solve_pattern2_both() {
+    fn test_solve_pattern2_both() -> Result<(), Box<dyn Error>> {
         let patterns = parse(both_examples().lines().map(|s| s.to_string()));
         let result = patterns
             .iter()
             .map(|p| solve_pattern2(p.iter().cloned()))
-            .sum::<Result<i32, _>>();
-        assert_eq!(result.unwrap(), 400);
+            .sum::<Result<i32, _>>()?;
+        assert_eq!(result, 400);
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let patterns = process_results(reader.lines(), |itr| parse(itr)).unwrap();
+        let patterns = reader.lines().process_results(|itr| parse(itr))?;
         let result = patterns
             .iter()
             .map(|p| solve_pattern1(p.iter().cloned()))
-            .sum::<Result<i32, _>>();
-        assert_eq!(result.unwrap(), 35232);
+            .sum::<Result<i32, _>>()?;
+        assert_eq!(result, 35232);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let patterns = process_results(reader.lines(), |itr| parse(itr)).unwrap();
+        let patterns = reader.lines().process_results(|itr| parse(itr))?;
         let result = patterns
             .iter()
             .map(|p| solve_pattern2(p.iter().cloned()))
-            .sum::<Result<i32, _>>();
-        assert_eq!(result.unwrap(), 37982);
+            .sum::<Result<i32, _>>()?;
+        assert_eq!(result, 37982);
+        Ok(())
     }
 }

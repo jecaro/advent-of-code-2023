@@ -1,4 +1,3 @@
-use itertools::process_results;
 use itertools::Itertools;
 use lib::get_args;
 use nalgebra::Matrix6;
@@ -21,7 +20,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let hailstones = process_results(stdin().lock().lines(), |lines| parse(lines))??;
+            let hailstones = stdin()
+                .lock()
+                .lines()
+                .process_results(|lines| parse(lines))??;
 
             let result = if arg == "-1" {
                 solve1(&hailstones)
@@ -222,11 +224,12 @@ fn solve2(hailstones: &[Hailstone]) -> Result<usize, Box<dyn Error>> {
 #[cfg(test)]
 mod day24 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{parse, solve1, solve1_any_range, solve2, Hailstone, Position, Velocity};
 
@@ -303,9 +306,10 @@ mod day24 {
     }
 
     #[test]
-    fn test_parse() {
-        let hailstones = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_parse() -> Result<(), Box<dyn Error>> {
+        let hailstones = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
         assert_eq!(hailstones, example());
+        Ok(())
     }
 
     #[test]
@@ -314,31 +318,30 @@ mod day24 {
     }
 
     #[test]
-    fn test_solve2() {
-        assert_eq!(solve2(&example()).unwrap(), 47);
+    fn test_solve2() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve2(&example())?, 47);
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let hailstones = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
+        let hailstones = reader.lines().process_results(|itr| parse(itr))??;
         let result = solve1(&hailstones);
 
         assert_eq!(result, 24627);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let hailstones = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
-        let result = solve2(&hailstones).unwrap();
+        let hailstones = reader.lines().process_results(|itr| parse(itr))??;
+        let result = solve2(&hailstones)?;
 
         assert_eq!(result, 527310134398221);
+        Ok(())
     }
 }

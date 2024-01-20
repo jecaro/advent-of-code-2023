@@ -1,8 +1,9 @@
+use itertools::Itertools;
 use lib::{get_args, INVALID_INPUT};
 use std::{
     collections::{HashMap, HashSet, VecDeque},
     error::Error,
-    io::{self, BufRead},
+    io::{stdin, BufRead},
     process::exit,
     str::FromStr,
 };
@@ -17,17 +18,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let solve = match arg.as_str() {
-                "-1" => solve1,
-                _ => solve2,
-            };
+            let cards = stdin().lock().lines().map(|line| Card::from_str(&line?));
 
-            let cards = io::stdin()
-                .lock()
-                .lines()
-                .map(|line| Card::from_str(&line?));
+            let result = match arg.as_str() {
+                "-1" => cards.process_results(|itr| solve1(itr)),
 
-            let result = solve(cards)?;
+                _ => cards.process_results(|itr| solve2(itr))?,
+            }?;
 
             println!("{}", result)
         }
@@ -65,26 +62,21 @@ impl FromStr for Card {
     }
 }
 
-fn solve1(
-    cards: impl Iterator<Item = Result<Card, Box<dyn Error>>>,
-) -> Result<u32, Box<dyn Error>> {
+fn solve1(cards: impl Iterator<Item = Card>) -> u32 {
     cards
-        .map(|card| -> Result<u32, Box<dyn Error>> {
-            let card = card?;
+        .map(|card| -> u32 {
             let winning_in_have = card.winning.intersection(&card.have).count() as u32;
             if winning_in_have == 0 {
-                Ok(0)
+                0
             } else {
-                Ok(2u32.pow(winning_in_have - 1))
+                2u32.pow(winning_in_have - 1)
             }
         })
         .sum()
 }
 
-fn solve2(
-    cards: impl Iterator<Item = Result<Card, Box<dyn Error>>>,
-) -> Result<u32, Box<dyn Error>> {
-    let cards = cards.collect::<Result<Vec<_>, _>>()?;
+fn solve2(cards: impl Iterator<Item = Card>) -> Result<u32, Box<dyn Error>> {
+    let cards = cards.collect::<Vec<_>>();
 
     let mut count = 0;
     let mut queue: VecDeque<_> = (0..cards.len() as u32).collect();
@@ -114,8 +106,10 @@ fn solve2(
 
 #[cfg(test)]
 mod day04 {
+    use itertools::Itertools;
     use std::{
         collections::HashSet,
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
         str::FromStr,
@@ -182,57 +176,65 @@ mod day04 {
     }
 
     #[test]
-    fn parse_single_card() {
-        assert_eq!(card1(), Card::from_str(CARD1).unwrap(),);
-        assert_eq!(card2(), Card::from_str(CARD2).unwrap(),);
-        assert_eq!(card3(), Card::from_str(CARD3).unwrap(),);
-        assert_eq!(card4(), Card::from_str(CARD4).unwrap(),);
-        assert_eq!(card5(), Card::from_str(CARD5).unwrap(),);
-        assert_eq!(card6(), Card::from_str(CARD6).unwrap(),);
+    fn parse_single_card() -> Result<(), Box<dyn Error>> {
+        assert_eq!(card1(), Card::from_str(CARD1)?,);
+        assert_eq!(card2(), Card::from_str(CARD2)?,);
+        assert_eq!(card3(), Card::from_str(CARD3)?,);
+        assert_eq!(card4(), Card::from_str(CARD4)?,);
+        assert_eq!(card5(), Card::from_str(CARD5)?,);
+        assert_eq!(card6(), Card::from_str(CARD6)?,);
+        Ok(())
     }
 
     #[test]
-    fn parse_multiple_cards() {
+    fn parse_multiple_cards() -> Result<(), Box<dyn Error>> {
         let cards_str = format!(
             "{}\n{}\n{}\n{}\n{}\n{}",
             CARD1, CARD2, CARD3, CARD4, CARD5, CARD6
         );
+        let result = cards_str
+            .lines()
+            .map(Card::from_str)
+            .collect::<Result<Vec<_>, _>>()?;
 
-        assert_eq!(
-            cards(),
-            cards_str
-                .lines()
-                .map(Card::from_str)
-                .collect::<Result<Vec<_>, _>>()
-                .unwrap()
-        );
+        assert_eq!(cards(), result);
+        Ok(())
     }
 
     #[test]
     fn example_solve1() {
-        assert_eq!(solve1(cards().into_iter().map(Ok)).unwrap(), 13);
+        assert_eq!(solve1(cards().into_iter()), 13);
     }
 
     #[test]
-    fn example_solve2() {
-        assert_eq!(solve2(cards().into_iter().map(Ok)).unwrap(), 30);
+    fn example_solve2() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve2(cards().into_iter())?, 30);
+        Ok(())
     }
 
     #[test]
-    fn input_solve1() {
-        let file = File::open("input").unwrap();
+    fn input_solve1() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let cards = reader.lines().map(|l| Card::from_str(&l?));
+        let result = reader.lines().process_results(|itr| {
+            itr.map(move |l| Card::from_str(&l))
+                .process_results(|itr| solve1(itr))
+        })??;
 
-        assert_eq!(solve1(cards).unwrap(), 23847);
+        assert_eq!(result, 23847);
+        Ok(())
     }
 
     #[test]
-    fn input_solve2() {
-        let file = File::open("input").unwrap();
+    fn input_solve2() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let cards = reader.lines().map(|l| Card::from_str(&l?));
+        let result = reader.lines().process_results(|itr| {
+            itr.map(move |l| Card::from_str(&l))
+                .process_results(|itr| solve2(itr))
+        })???;
 
-        assert_eq!(solve2(cards).unwrap(), 8570000);
+        assert_eq!(result, 8570000);
+        Ok(())
     }
 }

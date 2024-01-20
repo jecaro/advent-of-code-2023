@@ -74,6 +74,7 @@ dependencies = [
 name = "day-02"
 version = "0.1.0"
 dependencies = [
+ "itertools",
  "lib",
 ]
 
@@ -89,6 +90,7 @@ dependencies = [
 name = "day-04"
 version = "0.1.0"
 dependencies = [
+ "itertools",
  "lib",
 ]
 
@@ -113,6 +115,7 @@ dependencies = [
 name = "day-07"
 version = "0.1.0"
 dependencies = [
+ "itertools",
  "lib",
 ]
 

@@ -1,8 +1,8 @@
-use itertools::process_results;
+use itertools::Itertools;
 use lib::{get_args, INVALID_INPUT};
 use std::{
     error::Error,
-    io::{self, BufRead},
+    io::{stdin, BufRead},
     iter::zip,
     process::exit,
 };
@@ -36,14 +36,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" => {
-            let input = process_results(io::stdin().lock().lines(), |itr| parse_races(itr))??;
+            let input = stdin()
+                .lock()
+                .lines()
+                .process_results(|itr| parse_races(itr))??;
 
             let result = solve(input.into_iter());
 
             println!("{}", result)
         }
         Some(arg) if arg == "-2" => {
-            let input = process_results(io::stdin().lock().lines(), |itr| parse_race(itr))??;
+            let input = stdin()
+                .lock()
+                .lines()
+                .process_results(|itr| parse_race(itr))??;
 
             let result = solve_race(input);
 
@@ -130,11 +136,12 @@ fn solve_race(input: Race) -> u64 {
 #[cfg(test)]
 mod day06 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{parse_race, parse_races, solve, solve_race, Race};
 
@@ -174,19 +181,21 @@ mod day06 {
     }
 
     #[test]
-    fn parse_races_() {
+    fn parse_races_() -> Result<(), Box<dyn Error>> {
         assert_eq!(
-            parse_races(EXAMPLE.lines().map(|s| s.to_string())).unwrap(),
+            parse_races(EXAMPLE.lines().map(|s| s.to_string()))?,
             example1()
         );
+        Ok(())
     }
 
     #[test]
-    fn parse_race_() {
+    fn parse_race_() -> Result<(), Box<dyn Error>> {
         assert_eq!(
-            parse_race(EXAMPLE.lines().map(|s| s.to_string())).unwrap(),
+            parse_race(EXAMPLE.lines().map(|s| s.to_string()))?,
             example2()
         );
+        Ok(())
     }
 
     #[test]
@@ -202,24 +211,22 @@ mod day06 {
     }
 
     #[test]
-    fn input_solve1() {
-        let file = File::open("input").unwrap();
+    fn input_solve1() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let input = process_results(reader.lines(), |itr| parse_races(itr))
-            .unwrap()
-            .unwrap();
+        let input = reader.lines().process_results(|itr| parse_races(itr))??;
 
         assert_eq!(solve(input.into_iter()), 170000);
+        Ok(())
     }
 
     #[test]
-    fn input_solve2() {
-        let file = File::open("input").unwrap();
+    fn input_solve2() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let input = process_results(reader.lines(), |itr| parse_race(itr))
-            .unwrap()
-            .unwrap();
+        let input = reader.lines().process_results(|itr| parse_race(itr))??;
 
         assert_eq!(solve_race(input), 20537782);
+        Ok(())
     }
 }

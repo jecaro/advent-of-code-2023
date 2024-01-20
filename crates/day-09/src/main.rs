@@ -1,8 +1,8 @@
-use itertools::process_results;
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     error::Error,
-    io::{self, BufRead},
+    io::{stdin, BufRead},
     process::exit,
 };
 
@@ -21,8 +21,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 _ => solve_line2,
             };
 
-            let input = io::stdin().lock().lines();
-            let result = process_results(input, |itr| solve(itr, solve_line))??;
+            let result = stdin()
+                .lock()
+                .lines()
+                .process_results(|itr| solve(itr, solve_line))??;
 
             println!("{}", result)
         }
@@ -74,11 +76,12 @@ fn solve(
 #[cfg(test)]
 mod day09 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{parse_line, solve, solve_line1, solve_line2};
 
@@ -100,78 +103,98 @@ mod day09 {
     }
 
     #[test]
-    fn test_parse_lines() {
-        let parsed_line1 = parse_line(LINE1.to_string()).unwrap();
+    fn test_parse_lines() -> Result<(), Box<dyn Error>> {
+        let parsed_line1 = parse_line(LINE1.to_string())?;
         assert_eq!(parsed_line1, line1());
 
-        let parsed_line2 = parse_line(LINE2.to_string()).unwrap();
+        let parsed_line2 = parse_line(LINE2.to_string())?;
         assert_eq!(parsed_line2, line2());
 
-        let parsed_line3 = parse_line(LINE3.to_string()).unwrap();
+        let parsed_line3 = parse_line(LINE3.to_string())?;
         assert_eq!(parsed_line3, line3());
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_line1() {
-        assert_eq!(solve_line1(line1()).unwrap(), 18);
+    fn test_solve1_line1() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve_line1(line1())?, 18);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_line1() {
-        assert_eq!(solve_line2(line1()).unwrap(), -3);
+    fn test_solve2_line1() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve_line2(line1())?, -3);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_line2() {
-        assert_eq!(solve_line1(line2()).unwrap(), 28);
+    fn test_solve1_line2() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve_line1(line2())?, 28);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_line2() {
-        assert_eq!(solve_line2(line2()).unwrap(), 0);
+    fn test_solve2_line2() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve_line2(line2())?, 0);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_line3() {
-        assert_eq!(solve_line1(line3()).unwrap(), 68);
+    fn test_solve1_line3() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve_line1(line3())?, 68);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_line3() {
-        assert_eq!(solve_line2(line3()).unwrap(), 5);
+    fn test_solve2_line3() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve_line2(line3())?, 5);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_lines() {
-        let result = solve(example().into_iter(), solve_line1).unwrap();
+    fn test_solve1_lines() -> Result<(), Box<dyn Error>> {
+        let result = solve(example().into_iter(), solve_line1)?;
         assert_eq!(result, 114);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_lines() {
-        let result = solve(example().into_iter(), solve_line2).unwrap();
+    fn test_solve2_lines() -> Result<(), Box<dyn Error>> {
+        let result = solve(example().into_iter(), solve_line2)?;
         assert_eq!(result, 2);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let result = process_results(reader.lines(), |itr| solve(itr, solve_line1))
-            .unwrap()
-            .unwrap();
-
+        let result = reader
+            .lines()
+            .process_results(|itr| solve(itr, solve_line1))??;
         assert_eq!(result, 1969958987);
+
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let result = process_results(reader.lines(), |itr| solve(itr, solve_line2))
-            .unwrap()
-            .unwrap();
+        let result = reader
+            .lines()
+            .process_results(|itr| solve(itr, solve_line2))??;
 
         assert_eq!(result, 1068);
+        Ok(())
     }
 }

@@ -1,4 +1,4 @@
-use itertools::process_results;
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     cmp::Ordering,
@@ -25,10 +25,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let cells =
-                process_results(stdin().lock().lines(), |itr| -> Result<_, Box<dyn Error>> {
-                    parse(itr)
-                })??;
+            let cells = stdin()
+                .lock()
+                .lines()
+                .process_results(|itr| -> Result<_, Box<dyn Error>> { parse(itr) })??;
 
             let result = if arg == "-1" {
                 solve1(cells)?
@@ -173,11 +173,12 @@ fn count(cells: &Vec<Vec<Cell>>) -> i32 {
 #[cfg(test)]
 mod day14 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{count, parse, solve1, solve2, tilt_left, transpose, Cell};
 
@@ -444,15 +445,17 @@ mod day14 {
     }
 
     #[test]
-    fn test_parse() {
-        let result = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_parse() -> Result<(), Box<dyn Error>> {
+        let result = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
         assert_eq!(result, example());
+        Ok(())
     }
 
     #[test]
-    fn test_tilted_north() {
-        let result = tilt_left(transpose(example()).unwrap());
+    fn test_tilted_north() -> Result<(), Box<dyn Error>> {
+        let result = tilt_left(transpose(example())?);
         assert_eq!(result, example_tilted_north());
+        Ok(())
     }
 
     #[test]
@@ -462,32 +465,32 @@ mod day14 {
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let cells = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
-        let result = solve1(cells).unwrap();
+        let cells = reader.lines().process_results(|itr| parse(itr))??;
+        let result = solve1(cells)?;
 
         assert_eq!(result, 110821);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_example() {
-        let result = solve2(example()).unwrap();
+    fn test_solve2_example() -> Result<(), Box<dyn Error>> {
+        let result = solve2(example())?;
+
         assert_eq!(result, 64);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let cells = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
-        let result = solve2(cells).unwrap();
+        let cells = reader.lines().process_results(|itr| parse(itr))??;
+        let result = solve2(cells)?;
 
         assert_eq!(result, 83516);
+        Ok(())
     }
 }

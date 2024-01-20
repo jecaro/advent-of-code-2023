@@ -1,4 +1,4 @@
-use itertools::process_results;
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     cmp::Ordering,
@@ -18,7 +18,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let graph = process_results(stdin().lock().lines(), |lines| parse(lines))??;
+            let graph = stdin()
+                .lock()
+                .lines()
+                .process_results(|lines| parse(lines))??;
 
             let result = if arg == "-1" {
                 solve1(graph)
@@ -36,8 +39,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn parse(itr: impl Iterator<Item = String>) -> Result<Graph, Box<dyn Error>> {
     let mut width = 0;
-    let graph: Vec<Vec<_>> = process_results(
-        itr.map(|line| -> Result<Vec<u32>, String> {
+    let graph: Vec<Vec<_>> = itr
+        .map(|line| -> Result<Vec<u32>, String> {
             if width == 0 {
                 width = line.len();
             } else if width != line.len() {
@@ -46,9 +49,8 @@ fn parse(itr: impl Iterator<Item = String>) -> Result<Graph, Box<dyn Error>> {
             line.chars()
                 .map(|c| c.to_digit(10).ok_or("Invalid digit".to_string()))
                 .collect()
-        }),
-        |itr| itr.collect(),
-    )?;
+        })
+        .process_results(|itr| itr.collect())?;
     let height = graph.len();
 
     Ok(Graph {
@@ -255,11 +257,12 @@ fn solve(graph: Graph, neighbors: GetNeighbors) -> Result<u32, Box<dyn Error>> {
 #[cfg(test)]
 mod day17 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{parse, solve1, solve2};
 
@@ -286,42 +289,43 @@ mod day17 {
         999999999991";
 
     #[test]
-    fn test_solve1_example1() {
-        let graph = parse(EXAMPLE1.lines().map(|s| s.to_string())).unwrap();
-        assert_eq!(solve1(graph).unwrap(), 102);
+    fn test_solve1_example1() -> Result<(), Box<dyn Error>> {
+        let graph = parse(EXAMPLE1.lines().map(|s| s.to_string()))?;
+        assert_eq!(solve1(graph)?, 102);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_example1() {
-        let graph = parse(EXAMPLE1.lines().map(|s| s.to_string())).unwrap();
-        assert_eq!(solve2(graph).unwrap(), 94);
+    fn test_solve2_example1() -> Result<(), Box<dyn Error>> {
+        let graph = parse(EXAMPLE1.lines().map(|s| s.to_string()))?;
+        assert_eq!(solve2(graph)?, 94);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_example2() {
-        let graph = parse(EXAMPLE2.lines().map(|s| s.to_string())).unwrap();
-        assert_eq!(solve2(graph).unwrap(), 71);
+    fn test_solve2_example2() -> Result<(), Box<dyn Error>> {
+        let graph = parse(EXAMPLE2.lines().map(|s| s.to_string()))?;
+        assert_eq!(solve2(graph)?, 71);
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let graph = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
-        let result = solve1(graph);
-        assert_eq!(result.unwrap(), 722);
+        let graph = reader.lines().process_results(|itr| parse(itr))??;
+        let result = solve1(graph)?;
+        assert_eq!(result, 722);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let graph = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
-        let result = solve2(graph);
-        assert_eq!(result.unwrap(), 894);
+        let graph = reader.lines().process_results(|itr| parse(itr))??;
+        let result = solve2(graph)?;
+        assert_eq!(result, 894);
+        Ok(())
     }
 }

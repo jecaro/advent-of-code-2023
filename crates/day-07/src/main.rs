@@ -1,9 +1,10 @@
+use itertools::Itertools;
 use lib::{get_args, INVALID_INPUT};
 use std::{
     cmp::Ordering,
     collections::{HashMap, HashSet},
     error::Error,
-    io::{self, BufRead},
+    io::{stdin, BufRead},
     iter::zip,
     process::exit,
 };
@@ -23,11 +24,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 _ => solve2,
             };
 
-            let input = io::stdin().lock().lines().collect::<Result<Vec<_>, _>>()?;
-            let cards = input
-                .iter()
-                .map(|x| parse_hand_and_bid(x))
-                .collect::<Result<Vec<_>, _>>()?;
+            let cards = stdin().lock().lines().process_results(|itr| {
+                itr.map(|line| parse_hand_and_bid(&line))
+                    .collect::<Result<Vec<_>, _>>()
+            })??;
 
             let result = solve(cards);
 
@@ -141,7 +141,7 @@ fn type2(hand: &Hand) -> Type {
         .cloned()
         .chain(joker_use)
         .max()
-        .unwrap()
+        .unwrap_or(Type::HighCard)
 }
 
 fn parse_hand_and_bid(s: &str) -> Result<HandAndBid, Box<dyn Error>> {
@@ -211,6 +211,7 @@ fn solve2(mut hand_and_bids: Vec<HandAndBid>) -> u32 {
 mod day07 {
 
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
@@ -250,13 +251,14 @@ mod day07 {
     }
 
     #[test]
-    fn parse_example() {
+    fn parse_example() -> Result<(), Box<dyn Error>> {
         let parsed_example = EXAMPLE
             .lines()
             .map(parse_hand_and_bid)
-            .collect::<Result<Vec<HandAndBid>, _>>()
-            .unwrap();
+            .collect::<Result<Vec<HandAndBid>, _>>()?;
+
         assert_eq!(parsed_example, example());
+        Ok(())
     }
 
     #[test]
@@ -270,28 +272,28 @@ mod day07 {
     }
 
     #[test]
-    fn input_solve1() {
-        let file = File::open("input").unwrap();
+    fn input_solve1() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
         let cards = reader
             .lines()
             .map(|x| parse_hand_and_bid(&x?))
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap();
+            .collect::<Result<Vec<_>, _>>()?;
 
         assert_eq!(solve1(cards), 249483956);
+        Ok(())
     }
 
     #[test]
-    fn input_solve2() {
-        let file = File::open("input").unwrap();
+    fn input_solve2() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
         let cards = reader
             .lines()
             .map(|x| parse_hand_and_bid(&x?))
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap();
+            .collect::<Result<Vec<_>, _>>()?;
 
         assert_eq!(solve2(cards), 252137472);
+        Ok(())
     }
 }

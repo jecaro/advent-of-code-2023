@@ -1,4 +1,3 @@
-use itertools::process_results;
 use itertools::Itertools;
 use lib::get_args;
 use rand::prelude::IteratorRandom;
@@ -22,7 +21,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let graph = process_results(stdin().lock().lines(), |lines| parse(lines))??;
+            let graph = stdin()
+                .lock()
+                .lines()
+                .process_results(|lines| parse(lines))??;
             let result = solve(&graph)?;
 
             println!("{}", result);
@@ -184,11 +186,12 @@ fn bfs_visit<'a>(
 #[cfg(test)]
 mod day25 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{parse, solve};
 
@@ -208,28 +211,29 @@ mod day25 {
         frs: qnr lhk lsr";
 
     #[test]
-    fn test_parse() {
-        let graph = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_parse() -> Result<(), Box<dyn Error>> {
+        let graph = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
 
         assert_eq!(graph.len(), 15);
+        Ok(())
     }
 
     #[test]
-    fn test_solve() {
-        let graph = parse(EXAMPLE.lines().map(|s| s.to_string())).unwrap();
+    fn test_solve() -> Result<(), Box<dyn Error>> {
+        let graph = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
 
-        assert_eq!(solve(&graph).unwrap(), 54);
+        assert_eq!(solve(&graph)?, 54);
+        Ok(())
     }
 
     #[test]
-    fn test_solve_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let graph = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
-        let result = solve(&graph).unwrap();
+        let graph = reader.lines().process_results(|itr| parse(itr))??;
+        let result = solve(&graph)?;
 
         assert_eq!(result, 527790);
+        Ok(())
     }
 }

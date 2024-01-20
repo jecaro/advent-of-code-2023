@@ -1,4 +1,4 @@
-use itertools::{process_results, Itertools, Position};
+use itertools::{Itertools, Position};
 use lib::get_args;
 use std::{
     collections::HashMap,
@@ -19,8 +19,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let (workflows, parts) =
-                process_results(stdin().lock().lines(), |lines| parse(lines))??;
+            let (workflows, parts) = stdin()
+                .lock()
+                .lines()
+                .process_results(|lines| parse(lines))??;
             let result = if arg == "-1" {
                 solve1(&workflows, &parts)?
             } else {
@@ -500,11 +502,12 @@ fn solve2(workflows: &Vec<Workflow>) -> Result<i64, Box<dyn Error>> {
 #[cfg(test)]
 mod day19 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{parse, solve1, solve2, Category, Comparison, Condition, Part, Workflow};
 
@@ -731,66 +734,67 @@ mod day19 {
     }
 
     #[test]
-    fn test_parse_workflows() {
+    fn test_parse_workflows() -> Result<(), Box<dyn Error>> {
         let workflows_ = WORKFLOW
             .lines()
             .map(|s| s.parse::<Workflow>())
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap();
+            .collect::<Result<Vec<_>, _>>()?;
         assert_eq!(workflows_, workflows());
+        Ok(())
     }
 
     #[test]
-    fn test_parse_parts() {
+    fn test_parse_parts() -> Result<(), Box<dyn Error>> {
         let parts_ = PARTS
             .lines()
             .map(|s| s.parse::<Part>())
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap();
+            .collect::<Result<Vec<_>, _>>()?;
         assert_eq!(parts_, parts());
+        Ok(())
     }
 
     #[test]
-    fn test_parse() {
+    fn test_parse() -> Result<(), Box<dyn Error>> {
         let input = format!("{}\n\n{}", WORKFLOW, PARTS);
-        let (workflows_, parts_) = parse(input.lines().map(|s| s.to_string())).unwrap();
+        let (workflows_, parts_) = parse(input.lines().map(|s| s.to_string()))?;
         assert_eq!(workflows_, workflows());
         assert_eq!(parts_, parts());
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_example() {
-        let result = solve1(&workflows(), &parts()).unwrap();
+    fn test_solve1_example() -> Result<(), Box<dyn Error>> {
+        let result = solve1(&workflows(), &parts())?;
         assert_eq!(result, 19114);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_example() {
-        let result = solve2(&workflows()).unwrap();
+    fn test_solve2_example() -> Result<(), Box<dyn Error>> {
+        let result = solve2(&workflows())?;
         assert_eq!(result, 167409079868000);
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let (workflows, parts) = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
-        let result = solve1(&workflows, &parts).unwrap();
+        let (workflows, parts) = reader.lines().process_results(|itr| parse(itr))??;
+        let result = solve1(&workflows, &parts)?;
 
         assert_eq!(result, 432434);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let (workflows, _) = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
-        let result = solve2(&workflows).unwrap();
+        let (workflows, _) = reader.lines().process_results(|itr| parse(itr))??;
+        let result = solve2(&workflows)?;
 
         assert_eq!(result, 132557544578569);
+        Ok(())
     }
 }

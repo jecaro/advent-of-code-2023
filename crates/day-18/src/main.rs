@@ -1,4 +1,4 @@
-use itertools::{process_results, Itertools};
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     error::Error,
@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let directions = process_results(stdin().lock().lines(), |lines| {
+            let directions = stdin().lock().lines().process_results(|lines| {
                 if arg == "-1" {
                     parse1(lines)
                 } else {
@@ -175,11 +175,12 @@ fn num_points(points: &[(i64, i64)]) -> i64 {
 #[cfg(test)]
 mod day18 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{draw, num_points, parse1, parse2, parse_color, perimeter, Direction};
 
@@ -200,90 +201,84 @@ mod day18 {
         U 2 (#7a21e3)";
 
     #[test]
-    fn test_parse1() {
-        let directions = parse1(EXAMPLE1.lines().map(|s| s.to_string())).unwrap();
+    fn test_parse1() -> Result<(), Box<dyn Error>> {
+        let directions = parse1(EXAMPLE1.lines().map(|s| s.to_string()))?;
         let result = draw(&directions);
 
-        assert_eq!(result.last().unwrap(), &(0, 0));
+        assert_eq!(result.last().ok_or("No last elemtn")?, &(0, 0));
+        Ok(())
     }
 
     #[test]
-    fn test_perimeter() {
-        let directions = parse1(EXAMPLE1.lines().map(|s| s.to_string())).unwrap();
+    fn test_perimeter() -> Result<(), Box<dyn Error>> {
+        let directions = parse1(EXAMPLE1.lines().map(|s| s.to_string()))?;
         let points = draw(&directions);
         let perimeter = perimeter(&points);
 
         assert_eq!(perimeter, 38);
+        Ok(())
     }
 
     #[test]
-    fn test_num_points_parse1() {
-        let directions = parse1(EXAMPLE1.lines().map(|s| s.to_string())).unwrap();
+    fn test_num_points_parse1() -> Result<(), Box<dyn Error>> {
+        let directions = parse1(EXAMPLE1.lines().map(|s| s.to_string()))?;
         let points = draw(&directions);
         let area = num_points(&points);
 
         assert_eq!(area, 62);
+        Ok(())
     }
 
     #[test]
-    fn test_num_points_parse2() {
-        let directions = parse2(EXAMPLE1.lines().map(|s| s.to_string())).unwrap();
+    fn test_num_points_parse2() -> Result<(), Box<dyn Error>> {
+        let directions = parse2(EXAMPLE1.lines().map(|s| s.to_string()))?;
         let points = draw(&directions);
         let area = num_points(&points);
 
         assert_eq!(area, 952408144115);
+        Ok(())
     }
 
     #[test]
-    fn test_num_points_parse1_input() {
-        let file = File::open("input").unwrap();
+    fn test_num_points_parse1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let directions = process_results(reader.lines(), |itr| parse1(itr))
-            .unwrap()
-            .unwrap();
+        let directions = reader.lines().process_results(|itr| parse1(itr))??;
         let points = draw(&directions);
         let area = num_points(&points);
 
         assert_eq!(area, 47527);
+        Ok(())
     }
 
     #[test]
-    fn test_num_points_parse2_input() {
-        let file = File::open("input").unwrap();
+    fn test_num_points_parse2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let directions = process_results(reader.lines(), |itr| parse2(itr))
-            .unwrap()
-            .unwrap();
+        let directions = reader.lines().process_results(|itr| parse2(itr))??;
         let points = draw(&directions);
         let area = num_points(&points);
 
         assert_eq!(area, 52240187443190);
+        Ok(())
     }
 
     #[test]
-    fn test_parse_color() {
-        assert_eq!(
-            parse_color("(#70c710)").unwrap(),
-            (Direction::Right, 461937)
-        );
-        assert_eq!(parse_color("(#0dc571)").unwrap(), (Direction::Down, 56407));
-        assert_eq!(
-            parse_color("(#5713f0)").unwrap(),
-            (Direction::Right, 356671)
-        );
-        assert_eq!(parse_color("(#d2c081)").unwrap(), (Direction::Down, 863240));
-        assert_eq!(
-            parse_color("(#59c680)").unwrap(),
-            (Direction::Right, 367720)
-        );
-        assert_eq!(parse_color("(#411b91)").unwrap(), (Direction::Down, 266681));
-        assert_eq!(parse_color("(#8ceee2)").unwrap(), (Direction::Left, 577262));
-        assert_eq!(parse_color("(#caa173)").unwrap(), (Direction::Up, 829975));
-        assert_eq!(parse_color("(#1b58a2)").unwrap(), (Direction::Left, 112010));
-        assert_eq!(parse_color("(#caa171)").unwrap(), (Direction::Down, 829975));
-        assert_eq!(parse_color("(#7807d2)").unwrap(), (Direction::Left, 491645));
-        assert_eq!(parse_color("(#a77fa3)").unwrap(), (Direction::Up, 686074));
-        assert_eq!(parse_color("(#015232)").unwrap(), (Direction::Left, 5411));
-        assert_eq!(parse_color("(#7a21e3)").unwrap(), (Direction::Up, 500254));
+    fn test_parse_color() -> Result<(), Box<dyn Error>> {
+        assert_eq!(parse_color("(#70c710)")?, (Direction::Right, 461937));
+        assert_eq!(parse_color("(#0dc571)")?, (Direction::Down, 56407));
+        assert_eq!(parse_color("(#5713f0)")?, (Direction::Right, 356671));
+        assert_eq!(parse_color("(#d2c081)")?, (Direction::Down, 863240));
+        assert_eq!(parse_color("(#59c680)")?, (Direction::Right, 367720));
+        assert_eq!(parse_color("(#411b91)")?, (Direction::Down, 266681));
+        assert_eq!(parse_color("(#8ceee2)")?, (Direction::Left, 577262));
+        assert_eq!(parse_color("(#caa173)")?, (Direction::Up, 829975));
+        assert_eq!(parse_color("(#1b58a2)")?, (Direction::Left, 112010));
+        assert_eq!(parse_color("(#caa171)")?, (Direction::Down, 829975));
+        assert_eq!(parse_color("(#7807d2)")?, (Direction::Left, 491645));
+        assert_eq!(parse_color("(#a77fa3)")?, (Direction::Up, 686074));
+        assert_eq!(parse_color("(#015232)")?, (Direction::Left, 5411));
+        assert_eq!(parse_color("(#7a21e3)")?, (Direction::Up, 500254));
+        Ok(())
     }
 }

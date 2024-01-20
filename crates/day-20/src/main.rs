@@ -1,4 +1,4 @@
-use itertools::process_results;
+use itertools::Itertools;
 use lib::get_args;
 use std::{
     collections::{HashMap, HashSet, VecDeque},
@@ -18,7 +18,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(0) {
         Some(arg) if arg == "-1" || arg == "-2" => {
-            let nodes = process_results(stdin().lock().lines(), |lines| parse(lines))??;
+            let nodes = stdin()
+                .lock()
+                .lines()
+                .process_results(|lines| parse(lines))??;
 
             let result = if arg == "-1" {
                 solve1(nodes)?
@@ -317,11 +320,12 @@ fn flip(state: &FlipFlopState) -> FlipFlopState {
 mod day20 {
     use std::{
         collections::HashMap,
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{parse, solve, solve1, solve2, FlipFlopState, Node, NodeType, PulseCount};
 
@@ -416,26 +420,29 @@ mod day20 {
     }
 
     #[test]
-    fn test_parse_example1() {
-        let result = parse(EXAMPLE1.lines().map(|s| s.to_string())).unwrap();
+    fn test_parse_example1() -> Result<(), Box<dyn Error>> {
+        let result = parse(EXAMPLE1.lines().map(|s| s.to_string()))?;
         assert_eq!(result, example1());
+        Ok(())
     }
 
     #[test]
-    fn test_parse_example2() {
-        let result = parse(EXAMPLE2.lines().map(|s| s.to_string())).unwrap();
+    fn test_parse_example2() -> Result<(), Box<dyn Error>> {
+        let result = parse(EXAMPLE2.lines().map(|s| s.to_string()))?;
         assert_eq!(result, example2());
+        Ok(())
     }
 
     #[test]
-    fn test_solve_example1() {
-        let result = solve(example1(), 1).unwrap();
+    fn test_solve_example1() -> Result<(), Box<dyn Error>> {
+        let result = solve(example1(), 1)?;
         assert_eq!(result, PulseCount { high: 4, low: 8 });
+        Ok(())
     }
 
     #[test]
-    fn test_solve_example2() {
-        let result = solve(example2(), 1000).unwrap();
+    fn test_solve_example2() -> Result<(), Box<dyn Error>> {
+        let result = solve(example2(), 1000)?;
         assert_eq!(
             result,
             PulseCount {
@@ -443,41 +450,42 @@ mod day20 {
                 low: 4250
             }
         );
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_example1() {
-        let result = solve1(example1()).unwrap();
+    fn test_solve1_example1() -> Result<(), Box<dyn Error>> {
+        let result = solve1(example1())?;
         assert_eq!(result, 32000000);
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_example2() {
-        let result = solve1(example2()).unwrap();
+    fn test_solve1_example2() -> Result<(), Box<dyn Error>> {
+        let result = solve1(example2())?;
         assert_eq!(result, 11687500);
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let nodes = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
+        let nodes = reader.lines().process_results(|itr| parse(itr))??;
         let result = solve1(nodes).unwrap();
 
         assert_eq!(result, 944750144);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let nodes = process_results(reader.lines(), |itr| parse(itr))
-            .unwrap()
-            .unwrap();
-        let result = solve2(nodes).unwrap();
+        let nodes = reader.lines().process_results(|itr| parse(itr))??;
+        let result = solve2(nodes)?;
 
         assert_eq!(result, 222718819437131);
+        Ok(())
     }
 }

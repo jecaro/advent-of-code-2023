@@ -1,9 +1,9 @@
 use itertools::FoldWhile::{Continue, Done};
-use itertools::{process_results, Itertools};
+use itertools::Itertools;
 use lib::{get_args, INVALID_INPUT};
 use num::integer::lcm;
-use std::io::BufRead;
-use std::{collections::HashMap, error::Error, io, process::exit};
+use std::io::{stdin, BufRead};
+use std::{collections::HashMap, error::Error, process::exit};
 
 fn usage(prog_name: String) {
     println!("Usage: {} [-1|-2|-h]", prog_name);
@@ -20,8 +20,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 _ => solve2,
             };
 
-            let input = io::stdin().lock().lines();
-            let (path, nodes) = process_results(input, |itr| parse_input(itr))??;
+            let (path, nodes) = stdin()
+                .lock()
+                .lines()
+                .process_results(|itr| parse_input(itr))??;
             let result = solve(path, nodes)?;
 
             println!("{}", result)
@@ -133,11 +135,12 @@ fn solve2(path: Path, nodes: Vec<Node>) -> Result<u64, Box<dyn Error>> {
 #[cfg(test)]
 mod day08 {
     use std::{
+        error::Error,
         fs::File,
         io::{BufRead, BufReader},
     };
 
-    use itertools::process_results;
+    use itertools::Itertools;
 
     use crate::{parse_input, solve1, solve2, Direction, Directions, Node, Path};
 
@@ -322,66 +325,71 @@ mod day08 {
     }
 
     #[test]
-    fn test_parse_example1() {
-        let parsed_example = parse_input(EXAMPLE1.lines().map(|line| line.to_string())).unwrap();
+    fn test_parse_example1() -> Result<(), Box<dyn Error>> {
+        let parsed_example = parse_input(EXAMPLE1.lines().map(|line| line.to_string()))?;
 
         assert_eq!(parsed_example, example1());
+        Ok(())
     }
 
     #[test]
-    fn test_parse_example2() {
-        let parsed_example = parse_input(EXAMPLE2.lines().map(|line| line.to_string())).unwrap();
+    fn test_parse_example2() -> Result<(), Box<dyn Error>> {
+        let parsed_example = parse_input(EXAMPLE2.lines().map(|line| line.to_string()))?;
 
         assert_eq!(parsed_example, example2());
+        Ok(())
     }
 
     #[test]
-    fn test_parse_example3() {
-        let parsed_example = parse_input(EXAMPLE3.lines().map(|line| line.to_string())).unwrap();
+    fn test_parse_example3() -> Result<(), Box<dyn Error>> {
+        let parsed_example = parse_input(EXAMPLE3.lines().map(|line| line.to_string()))?;
 
         assert_eq!(parsed_example, example3());
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_example1() {
-        assert_eq!(
-            solve1(example1().0, "AAA".to_string(), example1().1).unwrap(),
-            2
-        );
+    fn test_solve1_example1() -> Result<(), Box<dyn Error>> {
+        let result = solve1(example1().0, "AAA".to_string(), example1().1)?;
+        assert_eq!(result, 2);
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_example2() {
-        assert_eq!(
-            solve1(example2().0, "AAA".to_string(), example2().1).unwrap(),
-            6
-        );
+    fn test_solve1_example2() -> Result<(), Box<dyn Error>> {
+        let result = solve1(example2().0, "AAA".to_string(), example2().1)?;
+
+        assert_eq!(result, 6);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_example3() {
-        assert_eq!(solve2(example3().0, example3().1).unwrap(), 6);
+    fn test_solve2_example3() -> Result<(), Box<dyn Error>> {
+        let result = solve2(example3().0, example3().1)?;
+
+        assert_eq!(result, 6);
+        Ok(())
     }
 
     #[test]
-    fn test_solve1_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve1_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let (path, nodes) = process_results(reader.lines(), |itr| parse_input(itr))
-            .unwrap()
-            .unwrap();
+        let (path, nodes) = reader.lines().process_results(|itr| parse_input(itr))??;
+        let result = solve1(path, "AAA".to_string(), nodes)?;
 
-        assert_eq!(solve1(path, "AAA".to_string(), nodes).unwrap(), 16531);
+        assert_eq!(result, 16531);
+        Ok(())
     }
 
     #[test]
-    fn test_solve2_input() {
-        let file = File::open("input").unwrap();
+    fn test_solve2_input() -> Result<(), Box<dyn Error>> {
+        let file = File::open("input")?;
         let reader = BufReader::new(file);
-        let (path, nodes) = process_results(reader.lines(), |itr| parse_input(itr))
-            .unwrap()
-            .unwrap();
+        let (path, nodes) = reader.lines().process_results(|itr| parse_input(itr))??;
+        let result = solve2(path, nodes)?;
 
-        assert_eq!(solve2(path, nodes).unwrap(), 24035773251517);
+        assert_eq!(result, 24035773251517);
+        Ok(())
     }
 }
