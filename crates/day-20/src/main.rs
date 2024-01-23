@@ -245,7 +245,7 @@ fn push_button(
                                 pulse,
                             });
                         });
-                        pulse_count[pulse] += node.outputs.len() as i64;
+                        pulse_count[pulse] += i64::try_from(node.outputs.len())?;
                     }
                     NodeType::FlipFlop { ref mut state } => match pulse {
                         Pulse::High => {}
@@ -263,7 +263,7 @@ fn push_button(
                                     pulse,
                                 });
                             });
-                            pulse_count[pulse] += node.outputs.len() as i64;
+                            pulse_count[pulse] += i64::try_from(node.outputs.len())?;
                         }
                     },
                     NodeType::Conjunction { inputs } => {
@@ -279,7 +279,7 @@ fn push_button(
                             });
                         });
 
-                        pulse_count[pulse] += node.outputs.len() as i64;
+                        pulse_count[pulse] += i64::try_from(node.outputs.len())?;
 
                         if (pulse == Pulse::High) && searched_conjunctions.contains(&node.name) {
                             found_conjunctions.insert(node.name.clone());

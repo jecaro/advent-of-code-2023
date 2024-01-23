@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 solve1(&fallen_bricks)
             } else {
                 solve2(&fallen_bricks)
-            };
+            }?;
 
             println!("{}", result);
         }
@@ -118,7 +118,7 @@ fn fall(bricks: &Vec<Brick>) -> Vec<Brick> {
     result
 }
 
-fn solve1(bricks: &Vec<Brick>) -> i32 {
+fn solve1(bricks: &Vec<Brick>) -> Result<i32, Box<dyn Error>> {
     let supporters = bricks.iter().fold(HashMap::new(), |mut acc, b| {
         let below_b = bricks
             .iter()
@@ -139,10 +139,10 @@ fn solve1(bricks: &Vec<Brick>) -> i32 {
         .collect::<HashSet<_>>()
         .len();
 
-    bricks.len() as i32 - unsafe_to_delete as i32
+    Ok(i32::try_from(bricks.len())? - i32::try_from(unsafe_to_delete)?)
 }
 
-fn solve2(bricks: &Vec<Brick>) -> i32 {
+fn solve2(bricks: &Vec<Brick>) -> Result<i32, Box<dyn Error>> {
     let (supporters, supporting) = bricks.iter().fold(
         (HashMap::new(), HashMap::new()),
         |(mut supporters, mut supporting), b| {
@@ -169,7 +169,7 @@ fn solve2(bricks: &Vec<Brick>) -> i32 {
     );
     bricks
         .iter()
-        .map(|b| {
+        .map(|b| -> Result<i32, Box<dyn Error>> {
             let mut falling: HashSet<&Brick> = HashSet::new();
             // that brick doesn't count in the final result, see -1 at the end of the scope
             falling.insert(b);
@@ -203,7 +203,7 @@ fn solve2(bricks: &Vec<Brick>) -> i32 {
                 }
             }
 
-            falling.len() as i32 - 1
+            Ok(i32::try_from(falling.len())? - 1)
         })
         .sum()
 }
@@ -324,7 +324,7 @@ mod day22 {
     fn test_solve1_example() -> Result<(), Box<dyn Error>> {
         let bricks = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
         let fallen_bricks = fall(&bricks);
-        let result = solve1(&fallen_bricks);
+        let result = solve1(&fallen_bricks)?;
 
         assert_eq!(result, 5);
 
@@ -335,7 +335,7 @@ mod day22 {
     fn test_solve2_example() -> Result<(), Box<dyn Error>> {
         let bricks = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
         let fallen_bricks = fall(&bricks);
-        let result = solve2(&fallen_bricks);
+        let result = solve2(&fallen_bricks)?;
 
         assert_eq!(result, 7);
 
@@ -348,7 +348,7 @@ mod day22 {
         let reader = BufReader::new(file);
         let bricks = reader.lines().process_results(|itr| parse(itr))??;
         let fallen_bricks = fall(&bricks);
-        let result = solve1(&fallen_bricks);
+        let result = solve1(&fallen_bricks)?;
 
         assert_eq!(result, 432);
 
@@ -361,7 +361,7 @@ mod day22 {
         let reader = BufReader::new(file);
         let bricks = reader.lines().process_results(|itr| parse(itr))??;
         let fallen_bricks = fall(&bricks);
-        let result = solve2(&fallen_bricks);
+        let result = solve2(&fallen_bricks)?;
 
         assert_eq!(result, 63166);
 

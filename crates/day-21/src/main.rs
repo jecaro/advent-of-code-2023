@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .process_results(|lines| parse(lines))??;
 
             let result = if arg == "-1" {
-                solve1(&grid, &start) as i64
+                i64::try_from(solve1(&grid, &start)?)?
             } else {
                 solve2(&grid, &start)?
             };
@@ -48,54 +48,67 @@ struct Grid {
     height: usize,
 }
 
-fn valid1(grid: &Grid, c: &Coordinates) -> bool {
-    c.x < grid.width as i32 && c.y < grid.height as i32 && !grid.rocks.contains(c)
+fn valid1(grid: &Grid, c: &Coordinates) -> Result<bool, Box<dyn Error>> {
+    Ok(c.x < i32::try_from(grid.width)?
+        && c.y < i32::try_from(grid.height)?
+        && !grid.rocks.contains(c))
 }
 
-fn valid2(grid: &Grid, c: &Coordinates) -> bool {
+fn valid2(grid: &Grid, c: &Coordinates) -> Result<bool, Box<dyn Error>> {
     let c_mod = Coordinates {
-        x: i32::rem_euclid(c.x, grid.width as i32),
-        y: i32::rem_euclid(c.y, grid.height as i32),
+        x: i32::rem_euclid(c.x, i32::try_from(grid.width)?),
+        y: i32::rem_euclid(c.y, i32::try_from(grid.height)?),
     };
 
-    !grid.rocks.contains(&c_mod)
+    Ok(!grid.rocks.contains(&c_mod))
 }
 
-type ValidFn = fn(grid: &Grid, c: &Coordinates) -> bool;
+type ValidFn = fn(grid: &Grid, c: &Coordinates) -> Result<bool, Box<dyn Error>>;
 
-fn advance(grid: &Grid, current: &HashSet<Coordinates>, valid: ValidFn) -> HashSet<Coordinates> {
+fn advance(
+    grid: &Grid,
+    current: &HashSet<Coordinates>,
+    valid: ValidFn,
+) -> Result<HashSet<Coordinates>, Box<dyn Error>> {
     let mut next = HashSet::new();
 
-    current.iter().for_each(|c| {
+    current.iter().try_for_each(|c| {
         vec![(0, 1), (0, -1), (1, 0), (-1, 0)]
             .iter()
-            .for_each(|(dx, dy)| {
+            .try_for_each(|(dx, dy)| {
                 let new_c = Coordinates {
-                    x: c.x as i32 + dx,
-                    y: c.y as i32 + dy,
+                    x: i32::try_from(c.x)? + dx,
+                    y: i32::try_from(c.y)? + dy,
                 };
 
-                if valid(grid, &new_c) {
+                if valid(grid, &new_c)? {
                     next.insert(new_c);
-                }
+                };
+                Ok::<(), Box<dyn Error>>(())
             })
-    });
+    })?;
 
-    next
+    Ok(next)
 }
 
-fn advance_count(grid: &Grid, start: &Coordinates, count: i32, valid: ValidFn) -> usize {
+fn advance_count(
+    grid: &Grid,
+    start: &Coordinates,
+    count: i32,
+    valid: ValidFn,
+) -> Result<usize, Box<dyn Error>> {
     let mut current = HashSet::new();
     current.insert(start.clone());
 
-    (0..count).for_each(|_| {
-        current = advance(grid, &current, valid);
-    });
+    (0..count).try_for_each(|_| {
+        current = advance(grid, &current, valid)?;
+        Ok::<(), Box<dyn Error>>(())
+    })?;
 
-    current.len()
+    Ok(current.len())
 }
 
-fn solve1(grid: &Grid, start: &Coordinates) -> usize {
+fn solve1(grid: &Grid, start: &Coordinates) -> Result<usize, Box<dyn Error>> {
     advance_count(grid, start, 64, valid1)
 }
 
@@ -111,22 +124,31 @@ fn solve2(grid: &Grid, start: &Coordinates) -> Result<i64, Box<dyn Error>> {
     let xs = (0..3).map(|i| 65 + 131 * i).collect::<Vec<_>>();
     let max_value = xs.iter().max().ok_or("No max value")?;
 
-    (1..=*max_value).for_each(|i| {
-        current = advance(grid, &current, valid2);
+    (1..=*max_value).try_for_each(|i| {
+        current = advance(grid, &current, valid2)?;
 
         if xs.contains(&i) {
             steps.insert(i, current.len());
         }
-    });
-    let p0 = *steps.get(xs.get(0).ok_or(NO_VALUE)?).ok_or(NO_VALUE)? as i64;
-    let p1 = *steps.get(xs.get(1).ok_or(NO_VALUE)?).ok_or(NO_VALUE)? as i64;
-    let p2 = *steps.get(xs.get(2).ok_or(NO_VALUE)?).ok_or(NO_VALUE)? as i64;
+        Ok::<(), Box<dyn Error>>(())
+    })?;
+
+    let get_point = |i| {
+        steps
+            .get(xs.get(i).ok_or(NO_VALUE)?)
+            .ok_or::<Box<dyn Error>>(NO_VALUE.into())
+            .and_then(|&x| i64::try_from(x).map_err(|e| e.into()))
+    };
+    let p0 = get_point(0)?;
+    let p1 = get_point(1)?;
+    let p2 = get_point(2)?;
 
     let c = p0;
     let b = (4 * p1 - 3 * p0 - p2) / 2;
     let a = p1 - p0 - b;
 
-    let x = (26501365 - grid.width as i64 / 2) / grid.width as i64;
+    let width = i64::try_from(grid.width)?;
+    let x = (26501365 - width / 2) / width;
 
     Ok(a * x * x + b * x + c)
 }
@@ -150,8 +172,8 @@ fn parse(lines: impl Iterator<Item = String>) -> Result<(Grid, Coordinates), Box
             line.chars()
                 .enumerate()
                 .try_for_each(|(x, c)| -> Result<(), Box<dyn Error>> {
-                    let x = x as i32;
-                    let y = y as i32;
+                    let x = i32::try_from(x)?;
+                    let y = i32::try_from(y)?;
                     match c {
                         '#' => {
                             rocks.insert(Coordinates { x, y });
@@ -220,7 +242,7 @@ mod day21 {
     fn test_advance_count_valid1() -> Result<(), Box<dyn Error>> {
         let (grid, start) = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
 
-        let result = advance_count(&grid, &start, 6, valid1);
+        let result = advance_count(&grid, &start, 6, valid1)?;
         assert_eq!(result, 16);
 
         Ok(())
@@ -230,27 +252,27 @@ mod day21 {
     fn test_advance_count_valid2() -> Result<(), Box<dyn Error>> {
         let (grid, start) = parse(EXAMPLE.lines().map(|s| s.to_string()))?;
 
-        let result = advance_count(&grid, &start, 6, valid2);
+        let result = advance_count(&grid, &start, 6, valid2)?;
         assert_eq!(result, 16);
 
-        let result = advance_count(&grid, &start, 10, valid2);
+        let result = advance_count(&grid, &start, 10, valid2)?;
         assert_eq!(result, 50);
 
-        let result = advance_count(&grid, &start, 50, valid2);
+        let result = advance_count(&grid, &start, 50, valid2)?;
         assert_eq!(result, 1594);
 
         // those are too slow to run in tests
 
-        // let result = advance_count1(&grid, &start, 100, valid2);
+        // let result = advance_count1(&grid, &start, 100, valid2)?;
         // assert_eq!(result, 6536);
 
-        // let result = advance_count(&grid, &start, 500, valid2);
+        // let result = advance_count(&grid, &start, 500, valid2)?;
         // assert_eq!(result, 167004);
 
-        // let result = advance_count(&grid, &start, 1000, valid2);
+        // let result = advance_count(&grid, &start, 1000, valid2)?;
         // assert_eq!(result, 668697);
 
-        // let result = advance_count(&grid, &start, 5000, valid2);
+        // let result = advance_count(&grid, &start, 5000, valid2)?;
         // assert_eq!(result, 16733044);
 
         Ok(())
@@ -262,7 +284,7 @@ mod day21 {
         let reader = BufReader::new(file);
         let (grid, start) = reader.lines().process_results(|itr| parse(itr))??;
 
-        let result = solve1(&grid, &start);
+        let result = solve1(&grid, &start)?;
         assert_eq!(result, 3758);
 
         Ok(())

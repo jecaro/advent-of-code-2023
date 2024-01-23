@@ -160,12 +160,9 @@ fn get_adjacent_positions(map: &Map, from: &Position) -> Result<Vec<Position>, B
 
 fn map_get(map: &Map, Position { x, y }: &Position) -> Option<Tile> {
     (*x >= 0 && *y >= 0)
-        .then_some(
-            map.tiles
-                .get(*y as usize)
-                .and_then(|row| row.get(*x as usize))
-                .copied(),
-        )
+        .then_some(usize::try_from(*x).ok().zip(usize::try_from(*y).ok()))
+        .flatten()
+        .map(|(x, y)| map.tiles.get(y).and_then(|row| row.get(x)).copied())
         .flatten()
 }
 
@@ -183,26 +180,29 @@ fn solve2(map: &Map) -> Result<usize, Box<dyn Error>> {
     // find all vertices
     let start = Position { x: 1, y: 0 };
     let end = Position {
-        x: map.width as i32 - 2,
-        y: map.height as i32 - 1,
+        x: i32::try_from(map.width)? - 2,
+        y: i32::try_from(map.height)? - 1,
     };
     let vertices = (0..map.width)
         .map(|x| {
             let start = &start;
             let end = &end;
             (0..map.height).filter_map(move |y| -> Option<Result<Position, Box<dyn Error>>> {
-                let position = Position {
-                    x: x as i32,
-                    y: y as i32,
-                };
-                if position == *start || position == *end {
-                    Some(Ok(position))
-                } else {
-                    match is_junction(map, &position) {
-                        Ok(true) => Some(Ok(position)),
-                        Ok(false) => None,
-                        Err(e) => Some(Err(e)),
+                let position = i32::try_from(x)
+                    .and_then(|x| i32::try_from(y).and_then(|y| Ok(Position { x, y })));
+                match position {
+                    Ok(position) => {
+                        if position == *start || position == *end {
+                            Some(Ok(position))
+                        } else {
+                            match is_junction(map, &position) {
+                                Ok(true) => Some(Ok(position)),
+                                Ok(false) => None,
+                                Err(e) => Some(Err(e)),
+                            }
+                        }
                     }
+                    Err(e) => Some(Err(e.into())),
                 }
             })
         })
@@ -272,8 +272,8 @@ fn is_junction(map: &Map, position: &Position) -> Result<bool, Box<dyn Error>> {
 fn solve1(map: &Map) -> Result<usize, Box<dyn Error>> {
     let start = Position { x: 1, y: 0 };
     let end = Position {
-        x: map.width as i32 - 2,
-        y: map.height as i32 - 1,
+        x: i32::try_from(map.width)? - 2,
+        y: i32::try_from(map.height)? - 1,
     };
 
     let mut stack: Vec<Step> = Vec::new();

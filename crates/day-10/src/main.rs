@@ -121,9 +121,11 @@ fn valid_to(maze: &Maze, position: Coordinates, direction: Direction) -> Option<
     let offset = offset(&direction);
     let new_coordinates = (position.0 + offset.0, position.1 + offset.1);
 
+    let new_coordinates0 = usize::try_from(new_coordinates.0).ok()?;
+    let new_coordinates1 = usize::try_from(new_coordinates.1).ok()?;
     let destination_tile = maze
-        .get(new_coordinates.1 as usize)
-        .and_then(|row| row.get(new_coordinates.0 as usize))?;
+        .get(new_coordinates1)
+        .and_then(|row| row.get(new_coordinates0))?;
 
     let valid = (direction == Direction::North
         && (*destination_tile == Tile::NorthSouth
@@ -151,8 +153,8 @@ fn valid_from(
     direction: Direction,
 ) -> Result<bool, Box<dyn Error>> {
     let tile = maze
-        .get(position.1 as usize)
-        .and_then(|row| row.get(position.0 as usize))
+        .get(usize::try_from(position.1)?)
+        .and_then(|row| row.get(usize::try_from(position.0).ok()?))
         .ok_or("Invalid coordinates")?;
 
     let valid = match tile {
@@ -201,14 +203,11 @@ fn create_tree(maze: &Maze) -> Result<Rc<RefCell<Tree>>, Box<dyn Error>> {
         .enumerate()
         .find_map(|(y, row)| {
             row.iter().enumerate().find_map(|(x, tile)| {
-                if *tile == Tile::Start {
-                    Some((x as i32, y as i32))
-                } else {
-                    None
-                }
+                (*tile == Tile::Start)
+                    .then_some(i32::try_from(x).and_then(|x| i32::try_from(y).map(|y| (x, y))))
             })
         })
-        .ok_or("No start tile found")?;
+        .ok_or("No start tile found")??;
 
     let mut stack: Vec<(Option<Direction>, Rc<RefCell<Tree>>)> = Vec::new();
     let tree = Rc::new(RefCell::new(Tree {
@@ -267,7 +266,7 @@ fn solve1(maze: Maze) -> Result<u32, Box<dyn Error>> {
 
     let longuest_path = longuest_path(tree.clone())?;
 
-    Ok(longuest_path.len() as u32 / 2)
+    Ok(u32::try_from(longuest_path.len())? / 2)
 }
 
 fn get_start_replacement(path: &[Rc<RefCell<Tree>>]) -> Result<Tile, Box<dyn Error>> {
@@ -322,44 +321,62 @@ fn solve2(maze: Maze) -> Result<u32, Box<dyn Error>> {
     let coordinates: HashSet<(i32, i32)> =
         HashSet::from_iter(path.iter().map(|node| node.borrow().position));
 
-    Ok(maze
+    maze
         // scan all the lines
         .enumerate()
-        .map(|(y, line)| -> u32 {
+        .map(|(y, line)| -> Result<_, Box<dyn Error>> {
             // fold the chars
-            line.enumerate()
-                .fold(
+            Ok(line
+                .enumerate()
+                .try_fold(
                     // in the state we store:
                     // - the number of tiles inside the path
                     // - if we are inside the path
                     // - the tile starting a wall NorthEast or SouthEast
                     (0, false, None),
-                    |(count, inside, first_tile): (u32, bool, Option<Tile>), (x, tile)| {
+                    |(count, inside, first_tile): (u32, bool, Option<Tile>),
+                     (x, tile)|
+                     -> Result<_, Box<dyn Error>> {
+                        // {
                         // we are on a wall
-                        if coordinates.contains(&(x as i32, y as i32)) {
-                            match (first_tile, tile) {
-                                (None, Tile::NorthSouth) => (count, !inside, None),
+                        Ok(
+                            if coordinates.contains(&(i32::try_from(x)?, i32::try_from(y)?)) {
+                                match (first_tile, tile) {
+                                    (None, Tile::NorthSouth) => (count, !inside, None),
 
-                                (None, Tile::NorthEast) => (count, inside, Some(Tile::NorthEast)),
-                                (None, Tile::SouthEast) => (count, inside, Some(Tile::SouthEast)),
+                                    (None, Tile::NorthEast) => {
+                                        (count, inside, Some(Tile::NorthEast))
+                                    }
+                                    (None, Tile::SouthEast) => {
+                                        (count, inside, Some(Tile::SouthEast))
+                                    }
 
-                                (Some(Tile::NorthEast), Tile::SouthWest) => (count, !inside, None),
-                                (Some(Tile::NorthEast), Tile::NorthWest) => (count, inside, None),
+                                    (Some(Tile::NorthEast), Tile::SouthWest) => {
+                                        (count, !inside, None)
+                                    }
+                                    (Some(Tile::NorthEast), Tile::NorthWest) => {
+                                        (count, inside, None)
+                                    }
 
-                                (Some(Tile::SouthEast), Tile::NorthWest) => (count, !inside, None),
-                                (Some(Tile::SouthEast), Tile::SouthWest) => (count, inside, None),
+                                    (Some(Tile::SouthEast), Tile::NorthWest) => {
+                                        (count, !inside, None)
+                                    }
+                                    (Some(Tile::SouthEast), Tile::SouthWest) => {
+                                        (count, inside, None)
+                                    }
 
-                                _ => (count, inside, first_tile),
-                            }
-                        // not on a wall
-                        } else {
-                            (if inside { count + 1 } else { count }, inside, None)
-                        }
+                                    _ => (count, inside, first_tile),
+                                }
+                                // not on a wall
+                            } else {
+                                (if inside { count + 1 } else { count }, inside, None)
+                            },
+                        )
                     },
-                )
-                .0
+                )?
+                .0)
         })
-        .sum())
+        .sum()
 }
 
 #[cfg(test)]

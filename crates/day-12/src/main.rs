@@ -86,14 +86,14 @@ fn solve2(itr: impl Iterator<Item = InputLine>) -> i64 {
         .sum()
 }
 
-fn check(springs: &[Spring], damaged_count: &[i64]) -> bool {
+fn check(springs: &[Spring], damaged_count: &[i64]) -> Result<bool, Box<dyn Error>> {
     let damaged_count_in_springs = springs
         .split(|s| *s != Spring::Damaged)
         .filter(|s| !s.is_empty())
-        .map(|s| s.len() as i64)
-        .collect::<Vec<_>>();
+        .map(|s| i64::try_from(s.len()))
+        .collect::<Result<Vec<_>, _>>()?;
 
-    damaged_count_in_springs == *damaged_count
+    Ok(damaged_count_in_springs == *damaged_count)
 }
 
 fn char_to_spring(c: char) -> Result<Spring, Box<dyn Error>> {
@@ -106,12 +106,14 @@ fn char_to_spring(c: char) -> Result<Spring, Box<dyn Error>> {
 }
 
 #[allow(dead_code)]
-fn combinations1(input_line: &InputLine) -> i64 {
-    let damaged_count_in_springs = input_line
-        .springs
-        .iter()
-        .filter(|s| **s == Spring::Damaged)
-        .count() as i64;
+fn combinations1(input_line: &InputLine) -> Result<i64, Box<dyn Error>> {
+    let damaged_count_in_springs = i64::try_from(
+        input_line
+            .springs
+            .iter()
+            .filter(|s| **s == Spring::Damaged)
+            .count(),
+    )?;
     let number_to_fit = input_line.damaged.iter().sum::<i64>() - damaged_count_in_springs;
 
     let unknown_refs = input_line.springs.iter().enumerate().filter_map(|(i, s)| {
@@ -122,17 +124,23 @@ fn combinations1(input_line: &InputLine) -> i64 {
         }
     });
 
-    unknown_refs
-        .combinations(number_to_fit as usize)
-        .filter(|replacements| {
-            let mut trial = input_line.springs.iter().cloned().collect::<Vec<_>>();
-            replacements
-                .iter()
-                .for_each(|i| trial[*i] = Spring::Damaged);
+    i64::try_from(
+        unknown_refs
+            .combinations(usize::try_from(number_to_fit)?)
+            .map(|replacements| {
+                let mut trial = input_line.springs.iter().cloned().collect::<Vec<_>>();
+                replacements
+                    .iter()
+                    .for_each(|i| trial[*i] = Spring::Damaged);
 
-            check(&trial, &input_line.damaged)
-        })
-        .count() as i64
+                check(&trial, &input_line.damaged)
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .iter()
+            .filter(|&&b| b)
+            .count(),
+    )
+    .map_err(|e| e.into())
 }
 
 fn combinations2(input_line: &InputLine) -> i64 {
@@ -561,9 +569,10 @@ mod day12 {
     }
 
     #[test]
-    fn test_combinations1_line1() {
+    fn test_combinations1_line1() -> Result<(), Box<dyn Error>> {
         let input = line1();
-        assert_eq!(combinations1(&input), 1);
+        assert_eq!(combinations1(&input)?, 1);
+        Ok(())
     }
 
     #[test]
@@ -579,9 +588,10 @@ mod day12 {
     }
 
     #[test]
-    fn test_combinations1_line2() {
+    fn test_combinations1_line2() -> Result<(), Box<dyn Error>> {
         let input = line2();
-        assert_eq!(combinations1(&input), 4);
+        assert_eq!(combinations1(&input)?, 4);
+        Ok(())
     }
 
     #[test]
@@ -597,9 +607,10 @@ mod day12 {
     }
 
     #[test]
-    fn test_combinations1_line3() {
+    fn test_combinations1_line3() -> Result<(), Box<dyn Error>> {
         let input = line3();
-        assert_eq!(combinations1(&input), 1);
+        assert_eq!(combinations1(&input)?, 1);
+        Ok(())
     }
 
     #[test]
@@ -615,9 +626,10 @@ mod day12 {
     }
 
     #[test]
-    fn test_combinations1_line4() {
+    fn test_combinations1_line4() -> Result<(), Box<dyn Error>> {
         let input = line4();
-        assert_eq!(combinations1(&input), 1);
+        assert_eq!(combinations1(&input)?, 1);
+        Ok(())
     }
 
     #[test]
@@ -633,9 +645,10 @@ mod day12 {
     }
 
     #[test]
-    fn test_combinations1_line5() {
+    fn test_combinations1_line5() -> Result<(), Box<dyn Error>> {
         let input = line5();
-        assert_eq!(combinations1(&input), 4);
+        assert_eq!(combinations1(&input)?, 4);
+        Ok(())
     }
 
     #[test]
@@ -651,9 +664,10 @@ mod day12 {
     }
 
     #[test]
-    fn test_combinations1_line6() {
+    fn test_combinations1_line6() -> Result<(), Box<dyn Error>> {
         let input = line6();
-        assert_eq!(combinations1(&input), 10);
+        assert_eq!(combinations1(&input)?, 10);
+        Ok(())
     }
 
     #[test]

@@ -122,7 +122,7 @@ type GetNeighbors = fn(&Graph, Vertex) -> Vec<(Vertex, u32)>;
 fn get_neighbors1(graph: &Graph, vertex: Vertex) -> Vec<(Vertex, u32)> {
     // a range and a reverse range are not the same type, therefore they cannot be part of the same
     // array
-    [(1 as i32..=3).collect(), (-3 as i32..=-1).rev().collect()]
+    [(1i32..=3).collect(), (-3i32..=-1).rev().collect()]
         .iter()
         .flat_map(|range: &Vec<i32>| -> Vec<(Vertex, u32)> {
             let mut dist: u32 = 0;
@@ -142,7 +142,7 @@ fn get_neighbors1(graph: &Graph, vertex: Vertex) -> Vec<(Vertex, u32)> {
 
 fn get_neighbors2(graph: &Graph, vertex: Vertex) -> Vec<(Vertex, u32)> {
     // we start at 1 and -1 to rightly compute the distance on the way
-    [(1 as i32..=10).collect(), (-10 as i32..=-1).rev().collect()]
+    [(1i32..=10).collect(), (-10i32..=-1).rev().collect()]
         .iter()
         .flat_map(|range: &Vec<i32>| -> Vec<(Vertex, u32)> {
             let mut dist: u32 = 0;
@@ -164,18 +164,18 @@ fn get_neighbors2(graph: &Graph, vertex: Vertex) -> Vec<(Vertex, u32)> {
 fn move_(vertex: Vertex, width: usize, height: usize, d: i32) -> Option<Vertex> {
     match vertex.orientation {
         Orientation::Horizontal => {
-            let nx = vertex.x as i32 + d;
-            (nx >= 0 && nx < width as i32).then_some(Vertex {
-                x: nx as usize,
+            let nx = i32::try_from(vertex.x).ok()? + d;
+            (nx >= 0 && nx < i32::try_from(width).ok()?).then_some(Vertex {
+                x: usize::try_from(nx).ok()?,
                 y: vertex.y,
                 orientation: Orientation::Vertical,
             })
         }
         Orientation::Vertical => {
-            let ny = vertex.y as i32 + d;
-            (ny >= 0 && ny < height as i32).then_some(Vertex {
+            let ny = i32::try_from(vertex.y).ok()? + d;
+            (ny >= 0 && ny < i32::try_from(height).ok()?).then_some(Vertex {
                 x: vertex.x,
-                y: ny as usize,
+                y: usize::try_from(ny).ok()?,
                 orientation: Orientation::Horizontal,
             })
         }

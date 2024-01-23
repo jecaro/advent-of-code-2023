@@ -218,6 +218,7 @@ fn solve2(hailstones: &[Hailstone]) -> Result<usize, Box<dyn Error>> {
         z: result[2],
     };
 
+    // As is safe to use in this case. It's the only way to cast a float to an integer.
     Ok(p.x.round() as usize + p.y.round() as usize + p.z.round() as usize)
 }
 

@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .lines()
                 .process_results(|itr| parse_races(itr))??;
 
-            let result = solve(input.into_iter());
+            let result = solve(input.into_iter())?;
 
             println!("{}", result)
         }
@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .lines()
                 .process_results(|itr| parse_race(itr))??;
 
-            let result = solve_race(input);
+            let result = solve_race(input)?;
 
             println!("{}", result)
         }
@@ -117,11 +117,12 @@ fn parse_race(itr: impl Iterator<Item = String>) -> Result<Race, Box<dyn Error>>
     Ok(Race { time, distance })
 }
 
-fn solve(races: impl Iterator<Item = Race>) -> u64 {
+fn solve(races: impl Iterator<Item = Race>) -> Result<u64, Box<dyn Error>> {
     races.map(solve_race).product()
 }
 
-fn solve_race(input: Race) -> u64 {
+// As is safe to use in this case. It's the only way to cast a float to an integer.
+fn solve_race(input: Race) -> Result<u64, Box<dyn Error>> {
     let x1 = (input.time as f64
         - ((input.time as f64).powi(2) - 4.0 * input.distance as f64).sqrt())
         / 2.0;
@@ -130,7 +131,8 @@ fn solve_race(input: Race) -> u64 {
         + ((input.time as f64).powi(2) - 4.0 * input.distance as f64).sqrt())
         / 2.0;
 
-    ((x1 + 1.).floor() as u64..=(x2 - 1.).ceil() as u64).count() as u64
+    u64::try_from(((x1 + 1.).floor() as u64..=(x2 - 1.).ceil() as u64).count())
+        .map_err(|e| e.into())
 }
 
 #[cfg(test)]
@@ -199,15 +201,17 @@ mod day06 {
     }
 
     #[test]
-    fn solve_race_() {
-        assert_eq!(solve_race(race1()), 4);
-        assert_eq!(solve_race(race2()), 8);
-        assert_eq!(solve_race(race3()), 9);
+    fn solve_race_() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve_race(race1())?, 4);
+        assert_eq!(solve_race(race2())?, 8);
+        assert_eq!(solve_race(race3())?, 9);
+        Ok(())
     }
 
     #[test]
-    fn solve_race2() {
-        assert_eq!(solve_race(example2()), 71503);
+    fn solve_race2() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve_race(example2())?, 71503);
+        Ok(())
     }
 
     #[test]
@@ -216,7 +220,7 @@ mod day06 {
         let reader = BufReader::new(file);
         let input = reader.lines().process_results(|itr| parse_races(itr))??;
 
-        assert_eq!(solve(input.into_iter()), 170000);
+        assert_eq!(solve(input.into_iter())?, 170000);
         Ok(())
     }
 
@@ -226,7 +230,7 @@ mod day06 {
         let reader = BufReader::new(file);
         let input = reader.lines().process_results(|itr| parse_race(itr))??;
 
-        assert_eq!(solve_race(input), 20537782);
+        assert_eq!(solve_race(input)?, 20537782);
         Ok(())
     }
 }

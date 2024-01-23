@@ -32,17 +32,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn hash(s: &str) -> u8 {
+fn hash(s: &str) -> u64 {
     s.chars().filter(|c| *c != '\n').fold(0, |acc, c| {
-        let acc = acc + c as u64;
+        let acc = acc + u64::from(c);
         let acc = acc * 17;
         let acc = acc % 256;
         acc
-    }) as u8
+    })
 }
 
 fn solve1(s: &str) -> u64 {
-    s.split(',').map(|x| hash(x) as u64).sum()
+    s.split(',').map(|x| hash(x)).sum()
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -103,35 +103,37 @@ fn solve2(s: &str) -> Result<u64, Box<dyn Error>> {
         .split(',')
         .try_for_each(|s| -> Result<_, Box<dyn Error>> {
             let step = s.parse::<Step>()?;
-            let hash = hash(&step.label);
+            let hash = usize::try_from(hash(&step.label))?;
             lenses
-                .get_mut(hash as usize)
-                .map(|lens| match step.operation {
-                    Operation::Remove => {
-                        match lens.get(&step.label) {
-                            None => {}
-                            Some(slot_and_focal) => {
-                                let slot = slot_and_focal.slot;
-                                lens.iter_mut()
-                                    .filter(|(_, slot_and_focal)| slot_and_focal.slot > slot)
-                                    .for_each(|(_, slot_and_focal)| {
-                                        slot_and_focal.slot -= 1;
-                                    });
+                .get_mut(hash)
+                .map(|lens| -> Result<_, Box<dyn Error>> {
+                    Ok(match step.operation {
+                        Operation::Remove => {
+                            match lens.get(&step.label) {
+                                None => {}
+                                Some(slot_and_focal) => {
+                                    let slot = slot_and_focal.slot;
+                                    lens.iter_mut()
+                                        .filter(|(_, slot_and_focal)| slot_and_focal.slot > slot)
+                                        .for_each(|(_, slot_and_focal)| {
+                                            slot_and_focal.slot -= 1;
+                                        });
+                                }
                             }
+                            lens.remove(&step.label);
                         }
-                        lens.remove(&step.label);
-                    }
-                    Operation::Focal(focal) => {
-                        let new_slot = lens.len() as u64;
-                        lens.entry(step.label)
-                            .and_modify(|slot_and_focal| {
-                                slot_and_focal.focal = focal;
-                            })
-                            .or_insert(SlotAndFocal {
-                                slot: new_slot,
-                                focal,
-                            });
-                    }
+                        Operation::Focal(focal) => {
+                            let new_slot = u64::try_from(lens.len())?;
+                            lens.entry(step.label)
+                                .and_modify(|slot_and_focal| {
+                                    slot_and_focal.focal = focal;
+                                })
+                                .or_insert(SlotAndFocal {
+                                    slot: new_slot,
+                                    focal,
+                                });
+                        }
+                    })
                 });
             Ok(())
         })?;
@@ -141,11 +143,14 @@ fn solve2(s: &str) -> Result<u64, Box<dyn Error>> {
         .enumerate()
         .map(|(box_, lens)| {
             lens.iter()
-                .map(|(_, SlotAndFocal { slot, focal })| {
-                    let box_ = box_ as u64 + 1;
-                    let slot = *slot + 1;
-                    box_ * slot * focal
-                })
+                .map(
+                    |(_, SlotAndFocal { slot, focal })| -> Result<_, Box<dyn Error>> {
+                        let box_ = u64::try_from(box_)? + 1;
+                        let slot = *slot + 1;
+                        Ok(box_ * slot * focal)
+                    },
+                )
+                .flatten()
                 .sum::<u64>()
         })
         .sum())

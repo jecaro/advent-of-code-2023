@@ -68,10 +68,11 @@ fn parse(itr: impl Iterator<Item = String>) -> Result<Grid, Box<dyn Error>> {
     let mut width = 0;
 
     let layout = itr
-        .map(|line| {
+        .map(|line| -> Result<Vec<Contraption>, Box<dyn Error>> {
+            let line_len = i32::try_from(line.len())?;
             width = if width == 0 {
-                Ok(line.len() as i32)
-            } else if width != (line.len() as i32) {
+                Ok(line_len)
+            } else if width != line_len {
                 Err(format!("Invalid line length: {}", line.len()))
             } else {
                 Ok(width)
@@ -94,7 +95,7 @@ fn parse(itr: impl Iterator<Item = String>) -> Result<Grid, Box<dyn Error>> {
 
     Ok(Grid {
         width,
-        height: layout.len() as i32,
+        height: i32::try_from(layout.len())?,
         layout,
     })
 }
@@ -170,7 +171,7 @@ fn solve2(grid: &Grid) -> Result<i32, Box<dyn Error>> {
 
 fn solve(grid: &Grid, start: (Point, Direction)) -> Result<i32, Box<dyn Error>> {
     let mut visited: Vec<Vec<HashSet<Direction>>> =
-        vec![vec![HashSet::new(); grid.width as usize]; grid.height as usize];
+        vec![vec![HashSet::new(); usize::try_from(grid.width)?]; usize::try_from(grid.height)?];
     let mut stack = vec![start];
 
     while let Some((point, direction)) = stack.pop() {
@@ -179,9 +180,11 @@ fn solve(grid: &Grid, start: (Point, Direction)) -> Result<i32, Box<dyn Error>> 
             continue;
         }
 
+        let point_x = usize::try_from(point.x)?;
+        let point_y = usize::try_from(point.y)?;
         let cell_visited = visited
-            .get_mut(point.y as usize)
-            .and_then(|row| row.get_mut(point.x as usize));
+            .get_mut(point_y)
+            .and_then(|row| row.get_mut(point_x));
 
         // skip visited cells
         if cell_visited
@@ -196,8 +199,8 @@ fn solve(grid: &Grid, start: (Point, Direction)) -> Result<i32, Box<dyn Error>> 
 
         // get the next moves
         grid.layout
-            .get(point.y as usize)
-            .and_then(|row| row.get(point.x as usize))
+            .get(point_y)
+            .and_then(|row| row.get(point_x))
             .map(|contraption| match contraption {
                 Contraption::Empty => stack.push((next(&point, &direction), direction)),
                 Contraption::VerticalSplitter => match direction {
@@ -249,11 +252,14 @@ fn solve(grid: &Grid, start: (Point, Direction)) -> Result<i32, Box<dyn Error>> 
             });
     }
 
-    Ok(visited
-        .iter()
-        .flatten()
-        .filter(|&visited| !visited.is_empty())
-        .count() as i32)
+    i32::try_from(
+        visited
+            .iter()
+            .flatten()
+            .filter(|&visited| !visited.is_empty())
+            .count(),
+    )
+    .map_err(|e| e.into())
 }
 
 #[cfg(test)]

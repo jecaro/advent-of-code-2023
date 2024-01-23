@@ -66,11 +66,7 @@ fn get_mirror_horizontally(
             })
             .sum::<usize>();
 
-        if mirror_equal == number_of_different_chars {
-            Ok(Some(i as i32 + 1))
-        } else {
-            Ok(None)
-        }
+        Ok((mirror_equal == number_of_different_chars).then_some(i32::try_from(i)? + 1))
     });
 
     indexes.process_results(|mut itr| itr.find_map(identity))

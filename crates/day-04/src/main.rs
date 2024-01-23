@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let cards = stdin().lock().lines().map(|line| Card::from_str(&line?));
 
             let result = match arg.as_str() {
-                "-1" => cards.process_results(|itr| solve1(itr)),
+                "-1" => cards.process_results(|itr| solve1(itr))?,
 
                 _ => cards.process_results(|itr| solve2(itr))?,
             }?;
@@ -62,14 +62,14 @@ impl FromStr for Card {
     }
 }
 
-fn solve1(cards: impl Iterator<Item = Card>) -> u32 {
+fn solve1(cards: impl Iterator<Item = Card>) -> Result<u32, Box<dyn Error>> {
     cards
-        .map(|card| -> u32 {
-            let winning_in_have = card.winning.intersection(&card.have).count() as u32;
+        .map(|card| -> Result<u32, Box<dyn Error>> {
+            let winning_in_have = u32::try_from(card.winning.intersection(&card.have).count())?;
             if winning_in_have == 0 {
-                0
+                Ok(0)
             } else {
-                2u32.pow(winning_in_have - 1)
+                Ok(2u32.pow(winning_in_have - 1))
             }
         })
         .sum()
@@ -79,19 +79,19 @@ fn solve2(cards: impl Iterator<Item = Card>) -> Result<u32, Box<dyn Error>> {
     let cards = cards.collect::<Vec<_>>();
 
     let mut count = 0;
-    let mut queue: VecDeque<_> = (0..cards.len() as u32).collect();
+    let mut queue: VecDeque<_> = (0..u32::try_from(cards.len())?).collect();
     let mut cache: HashMap<u32, u32> = HashMap::new();
 
     while let Some(card_id) = queue.pop_front() {
         let card = cards
-            .get(card_id as usize)
+            .get(usize::try_from(card_id)?)
             .ok_or(format!("Unable to find card {}", card_id))?;
         count += 1;
 
         let winning_in_have = if let Some(&cached) = cache.get(&card_id) {
             cached
         } else {
-            let winning_in_have_ = card.winning.intersection(&card.have).count() as u32;
+            let winning_in_have_ = u32::try_from(card.winning.intersection(&card.have).count())?;
             cache.insert(card_id, winning_in_have_);
             winning_in_have_
         };
@@ -202,8 +202,9 @@ mod day04 {
     }
 
     #[test]
-    fn example_solve1() {
-        assert_eq!(solve1(cards().into_iter()), 13);
+    fn example_solve1() -> Result<(), Box<dyn Error>> {
+        assert_eq!(solve1(cards().into_iter())?, 13);
+        Ok(())
     }
 
     #[test]
@@ -219,7 +220,7 @@ mod day04 {
         let result = reader.lines().process_results(|itr| {
             itr.map(move |l| Card::from_str(&l))
                 .process_results(|itr| solve1(itr))
-        })??;
+        })???;
 
         assert_eq!(result, 23847);
         Ok(())

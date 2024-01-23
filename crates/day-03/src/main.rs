@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use lib::get_args;
 use std::{
+    convert::identity,
     error::Error,
     io::{stdin, BufRead},
     process::exit,
@@ -79,16 +80,21 @@ where
                 } else if !c.is_numeric() {
                     assert!(prev_state.is_none());
 
-                    Some(Some(LocatedElement {
-                        element: Element::Symbol { symbol: c },
-                        location: location as i32,
-                    }))
+                    i32::try_from(location)
+                        .ok()
+                        .map(|location| LocatedElement {
+                            element: Element::Symbol { symbol: c },
+                            location,
+                        })
+                        .map(Some)
                 // c is a number
                 } else {
                     // update the current state
                     match prev_state {
                         None => {
-                            *prev_state = Some((location as i32, c.to_string()));
+                            *prev_state = i32::try_from(location)
+                                .ok()
+                                .map(|location| (location, c.to_string()));
                         }
                         Some((_, s)) => {
                             s.push(c);
@@ -112,7 +118,7 @@ where
 }
 
 fn adjacent(location: i32, number: i32, symbol_location: i32) -> bool {
-    let nb_digits = number.to_string().len() as i32;
+    let nb_digits = i32::try_from(number.to_string().len()).map_or(0, identity);
 
     symbol_location >= location - 1 && symbol_location <= location + nb_digits
 }

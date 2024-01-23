@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn solve1(cells: Vec<Vec<Cell>>) -> Result<i32, Box<dyn Error>> {
-    transpose(cells).map(|cells| count(&tilt_left(cells)))
+    transpose(cells).and_then(|cells| count(&tilt_left(cells)))
 }
 
 fn parse(itr: impl Iterator<Item = String>) -> Result<Vec<Vec<Cell>>, Box<dyn Error>> {
@@ -149,25 +149,25 @@ fn solve2(cells: Vec<Vec<Cell>>) -> Result<i32, Box<dyn Error>> {
         }
     }
 
-    transpose(current_cells).map(|cells| count(&cells))
+    transpose(current_cells).and_then(|cells| -> Result<i32, Box<dyn Error>> { count(&cells) })
 }
 
-fn count(cells: &Vec<Vec<Cell>>) -> i32 {
+fn count(cells: &Vec<Vec<Cell>>) -> Result<i32, Box<dyn Error>> {
     cells
         .iter()
         .map(|row| {
             row.iter()
                 .enumerate()
-                .map(|(i, c)| {
-                    if c == &Cell::Rounded {
-                        row.len() as i32 - i as i32
+                .map(|(i, c)| -> Result<i32, Box<dyn Error>> {
+                    Ok(if c == &Cell::Rounded {
+                        i32::try_from(row.len())? - i32::try_from(i)?
                     } else {
                         0
-                    }
+                    })
                 })
-                .sum::<i32>()
+                .sum::<Result<i32, Box<dyn Error>>>()
         })
-        .sum::<i32>()
+        .sum::<Result<i32, Box<dyn Error>>>()
 }
 
 #[cfg(test)]
@@ -459,9 +459,10 @@ mod day14 {
     }
 
     #[test]
-    fn test_count() {
-        let result = count(&example_tilted_north());
+    fn test_count() -> Result<(), Box<dyn Error>> {
+        let result = count(&example_tilted_north())?;
         assert_eq!(result, 136);
+        Ok(())
     }
 
     #[test]
