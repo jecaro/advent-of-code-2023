@@ -114,7 +114,7 @@ fn solve_pattern2(itr: impl Iterator<Item = String> + Clone) -> Result<i32, Box<
 }
 
 fn parse(itr: impl Iterator<Item = String>) -> Vec<Vec<String>> {
-    itr.group_by(|s| s.is_empty())
+    itr.chunk_by(|s| s.is_empty())
         .into_iter()
         .filter(|(empty, _)| !empty)
         .map(|(_, group)| group.collect())
