@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use lib::get_args;
 use rand::prelude::IteratorRandom;
-use rand::thread_rng;
+use rand::rng;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
@@ -65,11 +65,11 @@ fn most_common_edges(graph: &Graph, count: i32) -> Result<Vec<(&String, &String)
         // get two random keys
         let key1 = graph
             .keys()
-            .choose(&mut thread_rng())
+            .choose(&mut rng())
             .ok_or("Invalid key")?;
         let key2 = graph
             .keys()
-            .choose(&mut thread_rng())
+            .choose(&mut rng())
             .ok_or("Invalid key")?;
 
         // now find a path from key1 to key2
