@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 itertools = "0.14.0"
 lib = { path = "../lib" }
-rayon = "1.10.0"
+rayon = "1.11.0"
