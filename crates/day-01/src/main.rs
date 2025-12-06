@@ -42,7 +42,7 @@ fn first_last(s: &str) -> Result<u32, Box<dyn Error>> {
 }
 
 fn solve1(itr: impl Iterator<Item = String>) -> Result<u32, Box<dyn Error>> {
-    itr.map(|s| (s.chars().filter(|c| c.is_numeric()).collect::<String>()))
+    itr.map(|s| s.chars().filter(|c| c.is_numeric()).collect::<String>())
         .map(|s| first_last(&s))
         .sum()
 }

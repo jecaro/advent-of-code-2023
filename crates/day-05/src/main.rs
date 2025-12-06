@@ -174,7 +174,7 @@ fn solve2_brut_force(input: Input) -> Result<u32, Box<dyn Error>> {
     input
         .seeds
         .into_par_iter()
-        .flat_map(|seed| (seed.from..seed.from + seed.len))
+        .flat_map(|seed| seed.from..seed.from + seed.len)
         .map(|seed| {
             input.garden_maps.iter().fold(seed, |acc, garden_map| {
                 // go through all the garden ranges and stop when we find the one that contains the
