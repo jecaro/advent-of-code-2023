@@ -247,7 +247,7 @@ fn push_button(
                         });
                         pulse_count[pulse] += i64::try_from(node.outputs.len())?;
                     }
-                    NodeType::FlipFlop { ref mut state } => match pulse {
+                    NodeType::FlipFlop { state } => match pulse {
                         Pulse::High => {}
                         Pulse::Low => {
                             *state = flip(state);
